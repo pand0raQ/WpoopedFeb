@@ -1,19 +1,20 @@
 import Foundation
 import SwiftData
+import UIKit
 
 @Model
 final class Dog {
     var name: String
-    var breed: String?
-    var birthDate: Date?
+    var imageData: Data?
     var createdAt: Date
-    var ownerId: String
     
-    init(name: String, breed: String? = nil, birthDate: Date? = nil, ownerId: String) {
+    init(name: String) {
         self.name = name
-        self.breed = breed
-        self.birthDate = birthDate
         self.createdAt = Date()
-        self.ownerId = ownerId
+    }
+    
+    var image: UIImage? {
+        guard let imageData else { return nil }
+        return UIImage(data: imageData)
     }
 }

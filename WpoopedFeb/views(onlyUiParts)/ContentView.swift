@@ -16,6 +16,13 @@ struct ContentView: View {
             }
             
             NavigationStack {
+                DogsListView()
+            }
+            .tabItem {
+                Label("Dogs", systemImage: "pawprint.fill")
+            }
+            
+            NavigationStack {
                 ProfileView(viewModel: ProfileViewModel(modelContext: modelContext))
             }
             .tabItem {
