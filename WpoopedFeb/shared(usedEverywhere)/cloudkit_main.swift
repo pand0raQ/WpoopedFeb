@@ -140,7 +140,8 @@ class CloudKitManager: ObservableObject {
         query.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
         
         print("🔄 Executing query...")
-        let records = try await privateDatabase.perform(query, inZoneWith: Dog.zoneID)
+        let (matchResults, _) = try await privateDatabase.records(matching: query, inZoneWith: Dog.zoneID)
+        let records = matchResults.compactMap { try? $0.1.get() }
         print("📊 Found \(records.count) records")
         
         let dogs = records.compactMap { record in

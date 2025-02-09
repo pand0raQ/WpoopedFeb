@@ -11,7 +11,9 @@ struct DogsListView: View {
     var body: some View {
         List {
             ForEach(dogs) { dog in
-                DogRowView(dog: dog)
+                NavigationLink(destination: DogDetailView(dog: dog)) {
+                    DogRowView(dog: dog)
+                }
             }
         }
         .navigationTitle("My Dogs")
@@ -49,15 +51,34 @@ struct DogRowView: View {
                     .foregroundColor(.blue)
             }
             
-            Text(dog.name)
-                .font(.headline)
+            VStack(alignment: .leading) {
+                Text(dog.name)
+                    .font(.headline)
+                
+                if dog.isShared {
+                    HStack {
+                        Image(systemName: "person.2.fill")
+                        Text("Shared")
+                            .font(.caption)
+                    }
+                    .foregroundColor(.green)
+                }
+            }
+            
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .foregroundColor(.gray)
+                .font(.caption)
         }
         .padding(.vertical, 8)
     }
 }
 
 #Preview {
-    DogsListView()
-        .modelContainer(for: Dog.self, inMemory: true)
+    NavigationView {
+        DogsListView()
+            .modelContainer(for: Dog.self, inMemory: true)
+    }
 }
 
