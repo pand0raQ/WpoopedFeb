@@ -46,10 +46,4 @@ struct ProfileView: View {
     }
 }
 
-#Preview {
-    NavigationStack {
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try! ModelContainer(for: Dog.self, configurations: config)
-        ProfileView(viewModel: ProfileViewModel(modelContext: container.mainContext))
-    }
-}
+

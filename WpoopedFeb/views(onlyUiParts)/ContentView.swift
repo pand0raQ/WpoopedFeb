@@ -16,7 +16,7 @@ struct ContentView: View {
             }
             
             NavigationStack {
-                DogsListView()
+                DogsListView(modelContext: modelContext)
             }
             .tabItem {
                 Label("Dogs", systemImage: "pawprint.fill")

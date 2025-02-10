@@ -34,7 +34,7 @@ struct WpoopedFebApp: App {
                 isStoredInMemoryOnly: false,
                 allowsSave: true,
                 groupContainer: .identifier("group.bumblebee.WpoopedFeb"),
-                cloudKitDatabase: .none
+                cloudKitDatabase: .private(CloudKitManager.containerIdentifier)
             )
             
             return try ModelContainer(for: schema, configurations: modelConfiguration)

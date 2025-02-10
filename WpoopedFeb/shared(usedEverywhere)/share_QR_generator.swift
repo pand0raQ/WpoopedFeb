@@ -11,40 +11,25 @@ class ShareQRGenerator {
     
     private init() {}
     
-    /// Generates a QR code image from a URL string
+    /// Generates a QR code image from a URL
     /// - Parameters:
     ///   - url: The URL to encode in the QR code
     ///   - size: The desired size of the QR code image (default: 200)
     /// - Returns: A UIImage containing the QR code, or nil if generation fails
     func generateQRCode(from url: URL, size: CGFloat = 200) -> UIImage? {
-        print("🔄 Generating QR code for URL: \(url)")
-        
         // Convert URL to data
-        guard let data = url.absoluteString.data(using: .utf8) else {
-            print("❌ Failed to convert URL to data")
-            return nil
-        }
+        guard let data = url.absoluteString.data(using: .utf8) else { return nil }
         
         // Generate QR code
         generator.setValue(data, forKey: "inputMessage")
-        
-        guard let outputImage = generator.outputImage else {
-            print("❌ Failed to generate QR code")
-            return nil
-        }
+        guard let outputImage = generator.outputImage else { return nil }
         
         // Scale the image
         let scaleFactor = size / outputImage.extent.width
         let scaled = outputImage.transformed(by: CGAffineTransform(scaleX: scaleFactor, y: scaleFactor))
         
         // Convert to UIImage
-        guard let cgImage = context.createCGImage(scaled, from: scaled.extent) else {
-            print("❌ Failed to create CGImage")
-            return nil
-        }
-        
-        print("✅ QR code generated successfully")
-        return UIImage(cgImage: cgImage)
+        return context.createCGImage(scaled, from: scaled.extent).map { UIImage(cgImage: $0) }
     }
     
     /// Generates a QR code image from a sharing URL string
@@ -66,27 +51,22 @@ class ShareQRGenerator {
     ///   - size: The desired size of the QR code image (default: 200)
     /// - Returns: A UIImage containing the QR code, or nil if generation fails
     func generateQRCodeForDog(_ dog: Dog, size: CGFloat = 200) -> UIImage? {
-        // If we already have a QR code saved, return it
+        // Return cached QR code if available
         if let qrCodeData = dog.qrCodeData,
            let savedQRCode = UIImage(data: qrCodeData) {
-            print("✅ Using saved QR code")
             return savedQRCode
         }
         
-        guard let shareURL = dog.shareURL else {
-            print("❌ No share URL available for dog")
+        // Generate new QR code if we have a share URL
+        guard let shareURL = dog.shareURL,
+              let url = URL(string: shareURL),
+              let qrCode = generateQRCode(from: url, size: size) else {
             return nil
         }
         
-        guard let qrCode = generateQRCode(from: shareURL, size: size) else {
-            return nil
-        }
-        
-        // Save the generated QR code
+        // Cache the generated QR code
         if let qrCodeData = qrCode.pngData() {
             dog.qrCodeData = qrCodeData
-            
-            // Save to CloudKit
             Task {
                 await dog.saveToCloudKit()
             }

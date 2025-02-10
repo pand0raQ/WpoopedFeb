@@ -35,6 +35,8 @@ class CloudKitManager: ObservableObject {
             
             if accountStatus == .available {
                 print("✅ iCloud account is properly configured")
+                // Create the custom zone if it doesn't exist
+                try await createCustomZoneIfNeeded()
             } else {
                 print("❌ iCloud account is not available: \(accountStatus.rawValue)")
                 throw CloudKitManagerError.userNotFound
@@ -45,13 +47,51 @@ class CloudKitManager: ObservableObject {
         }
     }
     
+    private func createCustomZoneIfNeeded() async throws {
+        print("🔄 Checking for custom zone...")
+        do {
+            let zone = CKRecordZone(zoneID: Dog.zoneID)
+            return try await withCheckedThrowingContinuation { continuation in
+                privateDatabase.save(zone) { savedZone, error in
+                    if let error = error as? CKError {
+                        if error.code == .zoneNotFound {
+                            print("⚠️ Zone not found, creating it...")
+                            let newZone = CKRecordZone(zoneID: Dog.zoneID)
+                            self.privateDatabase.save(newZone) { _, saveError in
+                                if let saveError = saveError {
+                                    print("❌ Error creating zone: \(saveError.localizedDescription)")
+                                    continuation.resume(throwing: saveError)
+                                } else {
+                                    print("✅ Custom zone created successfully")
+                                    continuation.resume(returning: ())
+                                }
+                            }
+                        } else if error.code == .zoneBusy || error.code == .serverRecordChanged {
+                            // Zone already exists or is being modified, which is fine
+                            print("✅ Zone already exists or is being modified")
+                            continuation.resume(returning: ())
+                        } else {
+                            print("❌ Error creating zone: \(error.localizedDescription)")
+                            continuation.resume(throwing: error)
+                        }
+                    } else if let error = error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        print("✅ Custom zone created or already exists")
+                        continuation.resume(returning: ())
+                    }
+                }
+            }
+        } catch {
+            print("❌ Error in zone creation: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
     // MARK: - Record Operations
     
-    public func save(_ record: CKRecord) async throws -> CKRecord {
-        print("🔄 Starting to save record: \(record.recordType) - \(record.recordID.recordName)")
-        print("📍 Zone ID: \(record.recordID.zoneID.zoneName)")
-        
-        // Ensure the record is in the correct zone
+    /// Ensures a record is in the correct zone
+    private func ensureCorrectZone(_ record: CKRecord) -> CKRecord {
         if record.recordID.zoneID != Dog.zoneID {
             print("⚠️ Record not in DogsZone, moving to correct zone")
             let newRecordID = CKRecord.ID(recordName: record.recordID.recordName, zoneID: Dog.zoneID)
@@ -63,14 +103,22 @@ class CloudKitManager: ObservableObject {
                 print("📝 Copying field: \(key)")
             }
             
-            return try await save(recordInZone)
+            return recordInZone
         }
-        
+        return record
+    }
+    
+    /// Saves a record to CloudKit
+    /// - Parameter record: The record to save
+    /// - Parameter savePolicy: The save policy to use (defaults to .allKeys)
+    /// - Returns: The saved record
+    /// - Throws: CloudKit errors if save fails
+    private func saveRecord(_ record: CKRecord, savePolicy: CKModifyRecordsOperation.RecordSavePolicy = .allKeys) async throws -> CKRecord {
         print("💾 Saving record to CloudKit...")
         let (savedRecords, _) = try await privateDatabase.modifyRecords(
             saving: [record],
             deleting: [],
-            savePolicy: .allKeys,
+            savePolicy: savePolicy,
             atomically: true
         )
         
@@ -83,6 +131,14 @@ class CloudKitManager: ObservableObject {
         return savedRecord
     }
     
+    public func save(_ record: CKRecord) async throws -> CKRecord {
+        print("🔄 Starting to save record: \(record.recordType) - \(record.recordID.recordName)")
+        print("📍 Zone ID: \(record.recordID.zoneID.zoneName)")
+        
+        let recordInZone = ensureCorrectZone(record)
+        return try await saveRecord(recordInZone)
+    }
+    
     public func save<T: CloudKitSyncable>(_ item: T) async throws -> CKRecord {
         print("🔄 Converting item to CKRecord")
         let record = item.toCKRecord()
@@ -92,37 +148,8 @@ class CloudKitManager: ObservableObject {
     public func update<T: CloudKitSyncable>(_ item: T) async throws -> CKRecord {
         print("🔄 Starting update for item")
         let record = item.toCKRecord()
-        
-        // Ensure the record is in the correct zone
-        if record.recordID.zoneID != Dog.zoneID {
-            print("⚠️ Record not in DogsZone, moving to correct zone")
-            let newRecordID = CKRecord.ID(recordName: record.recordID.recordName, zoneID: Dog.zoneID)
-            let recordInZone = CKRecord(recordType: record.recordType, recordID: newRecordID)
-            
-            // Copy all fields
-            for (key, value) in record {
-                recordInZone[key] = value
-                print("📝 Copying field: \(key)")
-            }
-            
-            return try await save(recordInZone)
-        }
-        
-        print("💾 Updating record in CloudKit...")
-        let (savedRecords, _) = try await privateDatabase.modifyRecords(
-            saving: [record],
-            deleting: [],
-            savePolicy: .changedKeys,
-            atomically: true
-        )
-        
-        guard let savedRecord = try savedRecords[record.recordID]?.get() else {
-            print("❌ No record returned after update")
-            throw CloudKitManagerError.updateFailed("No record returned after update")
-        }
-        
-        print("✅ Record updated successfully")
-        return savedRecord
+        let recordInZone = ensureCorrectZone(record)
+        return try await saveRecord(recordInZone, savePolicy: .changedKeys)
     }
     
     public func delete(_ record: CKRecord) async throws {

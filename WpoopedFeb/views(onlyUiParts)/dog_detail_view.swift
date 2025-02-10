@@ -5,7 +5,7 @@ import CloudKit
 
 struct DogDetailView: View {
     @StateObject private var viewModel: DogDetailViewModel
-    private let qrCodeSize: CGFloat = 200
+    private let iconSize: CGFloat = 30
     
     init(dog: Dog) {
         _viewModel = StateObject(wrappedValue: DogDetailViewModel(dog: dog))
@@ -14,30 +14,18 @@ struct DogDetailView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // Dog Image Section
-                dogImageView
-                
-                // Dog Name
-                Text(viewModel.dog.name)
-                    .font(.title)
-                    .fontWeight(.bold)
-                
-                // Sharing Status
-                if viewModel.dog.isShared && viewModel.dog.isShareAccepted {
-                    sharingStatusView
-                }
-                
-                // Share Button or QR Code
-                if !viewModel.dog.isShared {
-                    shareButton
-                } else if viewModel.isShowingQRCode {
-                    qrCodeView
-                } else {
-                    showQRButton
-                }
+                DogDetailHeaderView(
+                    dog: viewModel.dog,
+                    showingQRCode: $viewModel.isShowingQRCode,
+                    qrCodeImage: viewModel.qrCodeImage,
+                    iconSize: iconSize,
+                    onShare: viewModel.shareButtonTapped
+                )
+                .padding(.horizontal)
             }
-            .padding()
+            .padding(.vertical)
         }
+        .background(Color(.systemGroupedBackground))
         .alert(
             "Sharing Error",
             isPresented: $viewModel.showingError,
@@ -50,93 +38,69 @@ struct DogDetailView: View {
             }
         )
     }
+}
+
+private struct DogDetailHeaderView: View {
+    let dog: Dog
+    @Binding var showingQRCode: Bool
+    let qrCodeImage: UIImage?
+    let iconSize: CGFloat
+    let onShare: () async -> Void
     
-    private var dogImageView: some View {
-        Group {
-            if let imageData = viewModel.dog.imageData,
-               let uiImage = UIImage(data: imageData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 200)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .shadow(radius: 5)
-            } else {
-                Image(systemName: "pawprint.circle.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 200)
-                    .foregroundColor(.accentColor)
-            }
-        }
-    }
-    
-    private var sharingStatusView: some View {
-        HStack {
-            Image(systemName: "person.2.fill")
-            Text("Shared")
-        }
-        .foregroundColor(.green)
-        .padding(.vertical, 5)
-    }
-    
-    private var shareButton: some View {
-        Button(action: viewModel.shareButtonTapped) {
-            HStack {
-                Image(systemName: "square.and.arrow.up")
-                Text("Share Dog")
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.accentColor)
-            .foregroundColor(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-        }
-        .disabled(viewModel.isSharing)
-        .overlay {
-            if viewModel.isSharing {
-                ProgressView()
-                    .tint(.white)
-            }
-        }
-    }
-    
-    private var showQRButton: some View {
-        Button(action: viewModel.showQRCode) {
-            HStack {
-                Image(systemName: "qrcode")
-                Text("Show QR Code")
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.accentColor)
-            .foregroundColor(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-        }
-    }
-    
-    private var qrCodeView: some View {
-        VStack {
-            if let qrImage = viewModel.qrCodeImage {
-                Image(uiImage: qrImage)
-                    .interpolation(.none)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: qrCodeSize, height: qrCodeSize)
-                    .padding()
-                    .background(Color(.systemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .shadow(radius: 5)
-                
-                Button(action: viewModel.hideQRCode) {
-                    Text("Hide QR Code")
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 16) {
+                if let imageData = dog.imageData, let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 100, height: 100)
+                        .clipShape(Circle())
+                        .shadow(radius: 2)
+                } else {
+                    Image(systemName: "pawprint.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 100, height: 100)
                         .foregroundColor(.accentColor)
                 }
-                .padding(.top)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(dog.name ?? "Unknown Dog")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    if dog.isShared ?? false {
+                        Label("Shared", systemImage: "person.2.fill")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Spacer()
+                
+                if !(dog.isShared ?? false) {
+                    Button(action: {
+                        Task {
+                            await onShare()
+                        }
+                    }) {
+                        Image(systemName: "qrcode")
+                            .font(.system(size: iconSize))
+                            .foregroundColor(.accentColor)
+                    }
+                } else if let qrImage = qrCodeImage {
+                    Image(uiImage: qrImage)
+                        .interpolation(.none)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: iconSize * 2, height: iconSize * 2)
+                }
             }
-        }
-        .onAppear {
-            viewModel.generateQRCode()
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+            .shadow(radius: 1)
         }
     }
 } 

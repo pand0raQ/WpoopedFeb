@@ -11,19 +11,15 @@ class ProfileViewModel: ObservableObject {
     
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
-        Task {
-            await fetchUserData()
-        }
+        fetchUserData()
     }
     
-    func fetchUserData() async {
+    func fetchUserData() {
         userDetails = authManager.currentUser()
     }
     
     func signOut() {
-        Task {
-            await authManager.signOut()
-        }
+        authManager.signOut()
     }
     
     func deleteAllUserData() async {
@@ -31,7 +27,7 @@ class ProfileViewModel: ObservableObject {
             // Delete all local data
             try await deleteLocalData()
             // Sign out
-            await authManager.signOut()
+            authManager.signOut()
         } catch {
             alertItem = AlertItem(
                 title: "Error",
@@ -41,9 +37,16 @@ class ProfileViewModel: ObservableObject {
     }
     
     private func deleteLocalData() async throws {
-        // Delete all dogs
+        // Delete all dogs from CloudKit first
         let dogsDescriptor = FetchDescriptor<Dog>()
         let dogs = try modelContext.fetch(dogsDescriptor)
+        for dog in dogs {
+            if !(dog.isShared ?? false) {  // Handle optional Bool with nil-coalescing
+                try? await CloudKitManager.shared.delete(dog.toCKRecord())
+            }
+        }
+        
+        // Then delete from local storage
         for dog in dogs {
             modelContext.delete(dog)
         }
