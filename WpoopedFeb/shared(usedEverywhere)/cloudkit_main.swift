@@ -160,30 +160,61 @@ class CloudKitManager: ObservableObject {
     
     public func fetchDogs() async throws -> [Dog] {
         print("🔍 Starting to fetch dogs from CloudKit")
-        print("📍 Using zone: \(Dog.zoneID.zoneName)")
         
+        // First fetch from private database
         let predicate = NSPredicate(value: true)
         let query = CKQuery(recordType: Dog.recordType, predicate: predicate)
         query.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
         
-        print("🔄 Executing query...")
+        print("🔄 Executing query in private database...")
         let (matchResults, _) = try await privateDatabase.records(matching: query, inZoneWith: Dog.zoneID)
-        let records = matchResults.compactMap { try? $0.1.get() }
-        print("📊 Found \(records.count) records")
+        let privateRecords = matchResults.compactMap { try? $0.1.get() }
+        print("📊 Found \(privateRecords.count) records in private database")
         
-        let dogs = records.compactMap { record in
+        // Then fetch from shared database
+        print("🔄 Executing query in shared database...")
+        let sharedDB = container.sharedCloudDatabase
+        let (sharedResults, _) = try await sharedDB.records(matching: query, inZoneWith: CKRecordZone.default().zoneID)
+        let sharedRecords = sharedResults.compactMap { try? $0.1.get() }
+        print("📊 Found \(sharedRecords.count) records in shared database")
+        
+        // Process private records
+        let privateDogs = privateRecords.compactMap { record in
             do {
                 let dog = try Dog.fromCKRecord(record)
-                print("✅ Successfully converted record to Dog: \(dog.name)")
+                print("✅ Successfully converted private record to Dog: \(dog.name)")
                 return dog
             } catch {
-                print("❌ Failed to convert record to Dog: \(error)")
+                print("❌ Failed to convert private record to Dog: \(error)")
                 return nil
             }
         }
         
-        print("✅ Fetch completed. Returning \(dogs.count) dogs")
-        return dogs
+        // Process shared records and fetch their shares
+        var sharedDogs: [Dog] = []
+        for record in sharedRecords {
+            do {
+                let dog = try Dog.fromCKRecord(record)
+                dog.isShared = true
+                
+                // Fetch the associated share record
+                let (shareResults, _) = try await sharedDB.records(matching: CKQuery(recordType: "cloudkit.share", predicate: NSPredicate(value: true)), inZoneWith: record.recordID.zoneID)
+                if let shareRecord = try shareResults.first?.1.get() as? CKShare {
+                    dog.shareRecordID = shareRecord.recordID.recordName
+                    if let shareURL = try? await SharingURLGenerator.shared.generateShareURL(from: shareRecord) {
+                        dog.shareURL = shareURL.absoluteString
+                    }
+                }
+                
+                print("✅ Successfully converted shared record to Dog: \(dog.name)")
+                sharedDogs.append(dog)
+            } catch {
+                print("❌ Failed to convert shared record to Dog: \(error)")
+            }
+        }
+        
+        print("✅ Fetch completed. Returning \(privateDogs.count + sharedDogs.count) dogs")
+        return privateDogs + sharedDogs
     }
     
     /// Creates a CKAsset from image data
@@ -199,6 +230,240 @@ class CloudKitManager: ObservableObject {
         } catch {
             print("❌ Error creating asset: \(error)")
             return nil
+        }
+    }
+    
+    // MARK: - Walk Operations
+    
+    public func fetchWalks(for dog: Dog) async throws -> [Walk] {
+        print("🔍 Fetching walks for dog: \(dog.name ?? "")")
+        print("📝 Dog details - ID: \(dog.recordID ?? "nil"), isShared: \(dog.isShared ?? false)")
+        
+        // For shared dogs, we need to use the shared database's DogsZone
+        let dogZoneID = if dog.isShared ?? false {
+            // Use the shared database's DogsZone
+            CKRecordZone.ID(zoneName: "DogsZone", ownerName: "_95f15e1388a74c44496595cb77c50953")
+        } else {
+            Dog.zoneID
+        }
+        
+        let dogReference = CKRecord.Reference(
+            recordID: CKRecord.ID(recordName: dog.recordID ?? "", zoneID: dogZoneID),
+            action: .none
+        )
+        print("🔗 Created dog reference with zoneID: \(dogReference.recordID.zoneID.zoneName)")
+        
+        let predicate = NSPredicate(format: "dogReference == %@", dogReference)
+        let query = CKQuery(recordType: Walk.recordType, predicate: predicate)
+        query.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        
+        // Use shared database for shared dogs
+        let database = (dog.isShared ?? false) ? container.sharedCloudDatabase : privateDatabase
+        print("📦 Using database: \(dog.isShared ?? false ? "shared" : "private")")
+        
+        // Use the same zone as the dog for walks
+        let walkZoneID = dogZoneID
+        print("🎯 Using zone: \(walkZoneID.zoneName) (owner: \(walkZoneID.ownerName))")
+        
+        print("🔄 Executing walks query...")
+        do {
+            let (matchResults, cursor) = try await database.records(matching: query, inZoneWith: walkZoneID)
+            print("📊 Query results - Count: \(matchResults.count), Has more: \(cursor != nil)")
+            
+            let records = matchResults.compactMap { try? $0.1.get() }
+            print("📊 Successfully parsed \(records.count) walk records")
+            
+            let walks = records.compactMap { record in
+                do {
+                    print("🔄 Processing walk record: \(record.recordID.recordName)")
+                    print("📍 Record zone: \(record.recordID.zoneID.zoneName)")
+                    
+                    let walk = try Walk.fromCKRecord(record)
+                    walk.dog = dog
+                    walk.recordID = record.recordID.recordName
+                    
+                    print("✅ Successfully converted record to Walk")
+                    return walk
+                } catch {
+                    print("❌ Failed to convert record to Walk: \(error)")
+                    return nil
+                }
+            }
+            
+            print("✅ Walk fetch completed. Returning \(walks.count) walks")
+            return walks
+        } catch {
+            print("❌ Error fetching walks: \(error)")
+            if let ckError = error as? CKError {
+                print("🔍 CloudKit error details:")
+                print("  - Error code: \(ckError.code.rawValue)")
+                print("  - Description: \(ckError.localizedDescription)")
+                if let serverRecord = ckError.serverRecord {
+                    print("  - Server record type: \(serverRecord.recordType)")
+                    print("  - Server record zone: \(serverRecord.recordID.zoneID.zoneName)")
+                }
+            }
+            throw error
+        }
+    }
+    
+    public func saveWalk(_ walk: Walk) async throws {
+        print("💾 Saving walk to CloudKit...")
+        guard let dog = walk.dog else {
+            throw CloudKitManagerError.saveFailed("Walk must be associated with a dog")
+        }
+        
+        print("📝 Walk details:")
+        print("  - Walk ID: \(walk.recordID ?? "nil")")
+        print("  - Dog ID: \(dog.recordID ?? "nil")")
+        print("  - Is Shared: \(dog.isShared ?? false)")
+        
+        if dog.isShared ?? false {
+            print("🔄 Getting share record for shared dog...")
+            
+            // First fetch the dog record from shared database
+            let dogZoneID = CKRecordZone.ID(zoneName: "DogsZone", ownerName: "_95f15e1388a74c44496595cb77c50953")
+            let dogRecordID = CKRecord.ID(recordName: dog.recordID ?? "", zoneID: dogZoneID)
+            
+            print("🔍 Fetching dog record from shared database...")
+            let dogRecord = try await container.sharedCloudDatabase.record(for: dogRecordID)
+            
+            print("✅ Found dog record")
+            print("  - Record ID: \(dogRecord.recordID.recordName)")
+            print("  - Zone: \(dogRecord.recordID.zoneID.zoneName)")
+            
+            // Get the share from the dog record
+            guard let share = dogRecord.share else {
+                throw CloudKitManagerError.saveFailed("No share record found for dog")
+            }
+            
+            print("✅ Found share record")
+            print("  - Share Zone: \(share.recordID.zoneID.zoneName)")
+            print("  - Share Owner: \(share.recordID.zoneID.ownerName)")
+            
+            // Create walk record in the share's zone
+            let walkRecord = CKRecord(
+                recordType: Walk.recordType,
+                recordID: CKRecord.ID(recordName: walk.recordID ?? UUID().uuidString, zoneID: dogRecord.recordID.zoneID)
+            )
+            
+            // Set up the sharing relationship
+            walkRecord.setParent(dogRecord)
+            
+            // Set walk record fields
+            if let date = walk.date {
+                walkRecord["date"] = date
+            }
+            walkRecord["walkType"] = walk.walkType?.rawValue
+            walkRecord["lastModified"] = walk.lastModified
+            walkRecord["id"] = walk.id?.uuidString
+            
+            // Create dog reference using the dog's zone
+            let dogReference = CKRecord.Reference(
+                recordID: dogRecord.recordID,
+                action: .deleteSelf
+            )
+            walkRecord["dogReference"] = dogReference
+            
+            print("📝 Created walk record in shared zone:")
+            print("  - Record ID: \(walkRecord.recordID.recordName)")
+            print("  - Zone: \(walkRecord.recordID.zoneID.zoneName)")
+            print("  - Share: \(share.recordID.recordName)")
+            
+            // Save to shared database
+            print("💾 Saving to shared database...")
+            let (savedRecords, _) = try await container.sharedCloudDatabase.modifyRecords(
+                saving: [walkRecord],
+                deleting: [],
+                savePolicy: .allKeys,
+                atomically: true
+            )
+            
+            guard let savedWalkRecord = try savedRecords[walkRecord.recordID]?.get() else {
+                throw CloudKitManagerError.saveFailed("No record returned after save")
+            }
+            
+            print("✅ Walk saved successfully to shared database")
+            print("  - Saved Record ID: \(savedWalkRecord.recordID.recordName)")
+            print("  - Share: \(savedWalkRecord.share?.recordID.recordName ?? "none")")
+            
+        } else {
+            // Handle private dog walk save
+            let walkRecord = walk.toCKRecord()
+            print("📝 Created CKRecord for private dog:")
+            print("  - Record ID: \(walkRecord.recordID.recordName)")
+            print("  - Zone: \(walkRecord.recordID.zoneID.zoneName)")
+            
+            print("💾 Saving to private database...")
+            let (savedRecords, _) = try await privateDatabase.modifyRecords(
+                saving: [walkRecord],
+                deleting: [],
+                savePolicy: .allKeys,
+                atomically: true
+            )
+            
+            guard let savedWalkRecord = try savedRecords[walkRecord.recordID]?.get() else {
+                throw CloudKitManagerError.saveFailed("No record returned after save")
+            }
+            
+            print("✅ Walk saved successfully to private database")
+        }
+        
+        // Update the dog's lastModified date in the appropriate database
+        dog.lastModified = Date()
+        
+        // Create dog record with the correct zone ID for shared database
+        let updatedDogZoneID = CKRecordZone.ID(zoneName: "DogsZone", ownerName: "_95f15e1388a74c44496595cb77c50953")
+        let updatedDogRecordID = CKRecord.ID(recordName: dog.recordID ?? "", zoneID: updatedDogZoneID)
+        let updatedDogRecord = CKRecord(recordType: Dog.recordType, recordID: updatedDogRecordID)
+        updatedDogRecord["lastModified"] = dog.lastModified
+        
+        print("\n🔄 Updating dog's lastModified date...")
+        print("  - Using zone: \(updatedDogZoneID.zoneName)")
+        print("  - Zone owner: \(updatedDogZoneID.ownerName)")
+        
+        let database = (dog.isShared ?? false) ? container.sharedCloudDatabase : privateDatabase
+        let (updatedRecords, _) = try await database.modifyRecords(
+            saving: [updatedDogRecord],
+            deleting: [],
+            savePolicy: .changedKeys,
+            atomically: true
+        )
+        
+        if let updatedDogRecord = try updatedRecords[updatedDogRecord.recordID]?.get() {
+            print("✅ Dog record updated successfully")
+            print("  - Updated Record ID: \(updatedDogRecord.recordID.recordName)")
+            print("  - Updated Zone: \(updatedDogRecord.recordID.zoneID.zoneName)")
+        }
+    }
+    
+    // MARK: - Debug Helpers
+    
+    public func debugPrintZoneInfo() async {
+        print("\n📋 CloudKit Zone Debug Information:")
+        do {
+            // Check private database zones
+            print("\n🔐 Private Database Zones:")
+            let privateZones = try await privateDatabase.allRecordZones()
+            for zone in privateZones {
+                print("  - Zone: \(zone.zoneID.zoneName)")
+                print("    Owner: \(zone.zoneID.ownerName)")
+                print("    Capabilities: \(zone.capabilities.rawValue)")
+            }
+            
+            // Check shared database zones
+            print("\n🤝 Shared Database Zones:")
+            let sharedZones = try await container.sharedCloudDatabase.allRecordZones()
+            for zone in sharedZones {
+                print("  - Zone: \(zone.zoneID.zoneName)")
+                print("    Owner: \(zone.zoneID.ownerName)")
+                print("    Capabilities: \(zone.capabilities.rawValue)")
+            }
+        } catch {
+            print("❌ Error fetching zone information: \(error.localizedDescription)")
+            if let ckError = error as? CKError {
+                print("🔍 CloudKit error code: \(ckError.code.rawValue)")
+            }
         }
     }
 }

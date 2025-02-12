@@ -22,6 +22,9 @@ final class Dog {
     var lastModified: Date?
     var isShareAccepted: Bool = false
     
+    @Relationship(deleteRule: .cascade)
+    var walks: [Walk]? = []
+    
     @Transient
     private var _assetRecord: CKAsset?
     

@@ -19,7 +19,9 @@ struct DogsListView: View {
         List {
             Section {
                 ForEach(dogs) { dog in
-                    NavigationLink(destination: DogDetailView(dog: dog)) {
+                    NavigationLink {
+                        DogDetailView(dog: dog, modelContext: modelContext)
+                    } label: {
                         DogRowView(dog: dog)
                     }
                 }
@@ -31,6 +33,12 @@ struct DogsListView: View {
                     print("🐕 Current dogs count: \(dogs.count)")
                     for dog in dogs {
                         print("Dog: \(dog.name ?? "Unknown"), isShared: \(dog.isShared ?? false), shareRecordID: \(dog.shareRecordID ?? "none")")
+                    }
+                }
+                
+                Button("Print CloudKit Zones") {
+                    Task {
+                        await CloudKitManager.shared.debugPrintZoneInfo()
                     }
                 }
                 
