@@ -40,71 +40,68 @@ class CloudKitSharingManager {
             }
         }
         
-        // Ensure owner is set
-        let currentUserId = AuthManager.shared.currentUser()?.id ?? ""
-        if dog.ownerID?.isEmpty ?? true {
-            print("📝 Setting owner ID to current user: \(currentUserId)")
-            dog.ownerID = currentUserId
-        } else if dog.ownerID != currentUserId {
-            print("❌ Cannot share a dog you don't own")
-            throw CloudKitManagerError.shareFailed("Cannot share a dog you don't own")
-        }
-        
-        // Create dog record
+        // Create new share
         let dogRecord = dog.toCKRecord()
-        
-        // Create share with proper configuration
-        print("📝 Creating share record")
         let share = CKShare(rootRecord: dogRecord)
-        
-        // Configure share permissions and metadata
-        share[CKShare.SystemFieldKey.title] = dog.name as CKRecordValue?
-        share[CKShare.SystemFieldKey.shareType] = "com.wpooped.dog" as CKRecordValue?
         share.publicPermission = .readWrite
-        
-        // Set additional share metadata
-        if let id = dog.id {
-            share["dogId"] = id.uuidString as CKRecordValue?
-        }
-        share["ownerID"] = dog.ownerID as CKRecordValue?
-        
-        // Set thumbnail if available
-        if let imageData = dog.imageData {
-            share[CKShare.SystemFieldKey.thumbnailImageData] = imageData as CKRecordValue?
-        }
-        
-        // Update dog record with sharing fields
-        dogRecord["isShared"] = 1 as CKRecordValue
+        share[CKShare.SystemFieldKey.title] = dog.name ?? "Shared Dog"
         
         // Save both records atomically
-        print("💾 Saving records atomically...")
         do {
+            print("💾 Saving share and dog record...")
             let (savedRecords, _) = try await container.privateCloudDatabase.modifyRecords(
                 saving: [dogRecord, share],
                 deleting: [],
-                savePolicy: .changedKeys,
+                savePolicy: .allKeys,
                 atomically: true
             )
             
-            guard let savedShare = savedRecords[share.recordID],
-                  let share = try savedShare.get() as? CKShare else {
-                throw CloudKitManagerError.shareFailed("Failed to save share record")
+            // Verify both records were saved
+            guard let savedDogRecord = try savedRecords[dogRecord.recordID]?.get(),
+                  let savedShare = try savedRecords[share.recordID]?.get() as? CKShare else {
+                throw CloudKitManagerError.shareFailed("Failed to save share or dog record")
             }
             
-            print("✅ Successfully saved share record")
+            print("✅ Share and dog record saved successfully")
             
-            // Update the dog with share information
-            dog.shareRecordID = share.recordID.recordName
-            dog.isShared = true
-            
-            // Generate and set the share URL using the URL generator
-            if let shareURL = try? await urlGenerator.generateShareURL(from: share) {
+            // After saving the share, fetch and store metadata for the owner
+            do {
+                guard let shareURL = savedShare.url else {
+                    throw CloudKitManagerError.shareFailed("Share URL not available")
+                }
+                
+                // Fetch metadata for the owner
+                let metadata = try await fetchShareMetadata(from: shareURL)
+                print("✅ Owner fetched share metadata successfully")
+                
+                // Update dog with metadata
+                dog.shareRecordID = metadata.share.recordID.recordName
                 dog.shareURL = shareURL.absoluteString
+                dog.isShared = true
+                
+                // The shared database won't exist until the share is accepted
+                print("⚠️ Shared database not yet available - waiting for share acceptance")
+                
+                // Explicitly fetch the shared zones for the owner (will be empty until accepted)
+                do {
+                    let sharedZones = try await container.sharedCloudDatabase.allRecordZones()
+                    print("Owner's shared zones after sharing:", sharedZones)
+                } catch {
+                    print("⚠️ Error fetching shared zones (expected until share is accepted): \(error.localizedDescription)")
+                }
+                
+                return savedShare
+            } catch {
+                print("❌ Error fetching share metadata for owner: \(error.localizedDescription)")
+                throw error
             }
-            
-            return share
         } catch {
             print("❌ Error saving share: \(error.localizedDescription)")
+            if let ckError = error as? CKError {
+                print("🔍 CloudKit error details:")
+                print("  - Error code: \(ckError.code.rawValue)")
+                print("  - Description: \(ckError.localizedDescription)")
+            }
             throw error
         }
     }
