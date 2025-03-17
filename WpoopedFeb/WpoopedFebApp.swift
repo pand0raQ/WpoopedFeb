@@ -8,6 +8,8 @@
 import SwiftUI
 import SwiftData
 import OSLog
+import FirebaseCore
+import FirebaseFirestore
 
 // Add URL helper extension
 extension URL {
@@ -21,7 +23,11 @@ extension URL {
 
 @main
 struct WpoopedFebApp: App {
+    // Register the app delegate for handling Firebase notifications
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    
     @StateObject private var authManager = AuthManager.shared
+    @State private var isAuthenticated: Bool = false
     
     private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "WpoopedFeb", category: "ModelContainer")
     
@@ -33,8 +39,7 @@ struct WpoopedFebApp: App {
                 schema: schema,
                 isStoredInMemoryOnly: false,
                 allowsSave: true,
-                groupContainer: .identifier("group.bumblebee.WpoopedFeb"),
-                cloudKitDatabase: .private(CloudKitManager.containerIdentifier)
+                groupContainer: .identifier("group.bumblebee.WpoopedFeb")
             )
             
             return try ModelContainer(for: schema, configurations: modelConfiguration)
@@ -54,11 +59,25 @@ struct WpoopedFebApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if authManager.isAuthenticated {
-                ContentView()
-                    .modelContainer(sharedModelContainer)
-            } else {
-                WelcomeView()
+            ZStack {
+                if isAuthenticated {
+                    ContentView()
+                        .modelContainer(sharedModelContainer)
+                } else {
+                    MainWelcomeView()
+                }
+            }
+            .onAppear {
+                // Initialize isAuthenticated from AuthManager
+                isAuthenticated = authManager.isAuthenticated
+                
+                // Debug auth state
+                AuthDebugger.shared.debugAuthState()
+            }
+            .listenToAuthStateChanges(isAuthenticated: $isAuthenticated)
+            .onChange(of: authManager.isAuthenticated) { _, newValue in
+                isAuthenticated = newValue
+                print("📱 Auth state changed to: \(newValue)")
             }
         }
     }

@@ -51,6 +51,16 @@ The application follows the Model-View-ViewModel (MVVM) architectural pattern. T
         startLine: 34
         endLine: 45
         ```
+    *   **`shareOwnerName`:** Stores the CloudKit owner name from share metadata when a share is accepted, used for dynamic zone ID determination.
+        ```swift:WpoopedFeb/shared(usedEverywhere)/Dog.swift
+        startLine: 22
+        endLine: 22
+        ```
+    *   **`getZoneID()`:** Helper method that returns the correct CloudKit zone ID based on sharing status and owner information.
+        ```swift:WpoopedFeb/shared(usedEverywhere)/Dog.swift
+        startLine: 98
+        endLine: 107
+        ```
     *   **`saveToCloudKit()`:** Saves the `Dog` object to CloudKit, including handling image assets.
         ```swift:WpoopedFeb/shared(usedEverywhere)/Dog.swift
         startLine: 73
@@ -105,10 +115,15 @@ The application follows the Model-View-ViewModel (MVVM) architectural pattern. T
         startLine: 21
         endLine: 107
         ```
-    *   **`acceptShare(metadata:)`:** Handles accepting a CloudKit share using share metadata from a URL
+    *   **`acceptShare(from:context:)`:** Handles accepting a CloudKit share from a URL. Extracts and stores the owner's information from share metadata for proper zone identification.
         ```swift:WpoopedFeb/shared(usedEverywhere)/cloudkit_sharing_manager.swift
-        startLine: 109
-        endLine: 110
+        startLine: 146
+        endLine: 184
+        ```
+    *   **`fetchShareMetadata(from:)`:** Fetches share metadata from a URL, used for extracting owner information and validating shares.
+        ```swift:WpoopedFeb/shared(usedEverywhere)/cloudkit_sharing_manager.swift
+        startLine: 112
+        endLine: 128
         ```
 *   **`ShareQRGenerator` (`share_QR_generator.swift`):** Generates QR codes from URLs, used for sharing dogs.
     ```swift:WpoopedFeb/shared(usedEverywhere)/share_QR_generator.swift
@@ -317,7 +332,13 @@ The application follows the Model-View-ViewModel (MVVM) architectural pattern. T
          │                                    │ 3. Scan QR Code & Accept Share     │
          │                                    │<───────────────────────────────────│
          │                                    │                                    │
-         │ 4. Sync Updates                   │                                    │
+         │                                    │ 4. Extract Owner Name from Share   │
+         │                                    │───────────────────────────────────>│
+         │                                    │                                    │
+         │                                    │ 5. Store Owner Name for Zone ID    │
+         │                                    │───────────────────────────────────>│
+         │                                    │                                    │
+         │ 6. Sync Updates (Dogs & Walks)    │                                    │
          │<──────────────────────────────────>───────────────────────────────────>│
     ````
 
@@ -353,6 +374,12 @@ The application follows the Model-View-ViewModel (MVVM) architectural pattern. T
 3. **Conflict Resolution:**
    - No version tracking for concurrent edits
    - No merge strategy implementation
+
+4. **Walk Sharing:**
+   - Walks are now properly shared between users with dynamic zone ID handling
+   - Both users can log walks for shared dogs and see each other's logged walks
+   - The app stores the share owner's name from metadata when a share is accepted
+   - This owner name is used to dynamically determine the correct zone ID for CloudKit operations
 
 
 

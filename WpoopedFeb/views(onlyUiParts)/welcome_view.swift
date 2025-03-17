@@ -1,7 +1,7 @@
 import SwiftUI
 import AuthenticationServices
 
-struct WelcomeView: View {
+struct WelcomeViewUI: View {
     @StateObject private var viewModel = WelcomeViewModel()
     @State private var isExpanded = false
     @State private var buttonPressed = false

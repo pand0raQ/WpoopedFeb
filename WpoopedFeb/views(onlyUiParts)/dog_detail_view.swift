@@ -1,9 +1,10 @@
 // here is gonna be the dog detail view. dog image and name, button to generate qr code / button that reveal saved qr code 
 
 import SwiftUI
-import CloudKit
 import SwiftData
+import FirebaseFirestore
 
+// Main view - simplified to reduce complexity
 struct DogDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var viewModel: DogDetailViewModel
@@ -15,241 +16,228 @@ struct DogDetailView: View {
     }
     
     var body: some View {
+        // Move all complex view building to a separate struct
+        DogDetailContentView(viewModel: viewModel, iconSize: iconSize)
+    }
+}
+
+// Content view - handles the layout and passes data to subviews
+private struct DogDetailContentView: View {
+    @ObservedObject var viewModel: DogDetailViewModel
+    let iconSize: CGFloat
+    
+    var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                DogDetailHeaderView(
-                    dog: viewModel.dog,
-                    showingQRCode: $viewModel.isShowingQRCode,
-                    qrCodeImage: viewModel.qrCodeImage,
-                    iconSize: iconSize,
-                    onShare: viewModel.shareButtonTapped
-                )
-                .padding(.horizontal)
+                // Dog Header Section
+                headerSection
                 
                 // Walk Logging Section
-                WalkLoggingSection()
+                loggingSection
                 
                 // Walk History Section
-                WalkHistorySection()
+                historySection
                 
                 // Add debug section at the bottom of the list
-                Section("Debug") {
-                    Button("Create Test Walk") {
-                        Task {
-                            print("\n🔍 DEBUG: Creating Test Walk")
-                            print("🐕 Dog: \(viewModel.dog.name ?? "Unknown")")
-                            print("📝 Dog Details:")
-                            print("  - Record ID: \(viewModel.dog.recordID ?? "nil")")
-                            print("  - Is Shared: \(viewModel.dog.isShared ?? false)")
-                            print("  - Share Record ID: \(viewModel.dog.shareRecordID ?? "nil")")
-                            
-                            do {
-                                // Create and save test walk
-                                let walk = Walk(walkType: .walk, dog: viewModel.dog)
-                                print("\n📝 Created Walk:")
-                                print("  - ID: \(walk.id?.uuidString ?? "nil")")
-                                print("  - Record ID: \(walk.recordID ?? "nil")")
-                                
-                                // Get CKRecord for debugging
-                                let record = walk.toCKRecord()
-                                print("\n🔍 Walk CKRecord:")
-                                print("  - Record ID: \(record.recordID.recordName)")
-                                print("  - Zone Name: \(record.recordID.zoneID.zoneName)")
-                                print("  - Zone Owner: \(record.recordID.zoneID.ownerName)")
-                                if let dogRef = record["dogReference"] as? CKRecord.Reference {
-                                    print("  - Dog Reference:")
-                                    print("    - Record Name: \(dogRef.recordID.recordName)")
-                                    print("    - Zone Name: \(dogRef.recordID.zoneID.zoneName)")
-                                    print("    - Zone Owner: \(dogRef.recordID.zoneID.ownerName)")
-                                }
-                                
-                                // Try to save
-                                print("\n💾 Saving walk...")
-                                try await CloudKitManager.shared.saveWalk(walk)
-                                
-                                // Refresh to verify
-                                print("\n🔄 Refreshing walks...")
-                                await viewModel.refreshWalks()
-                                
-                                print("\n✅ Test walk creation completed")
-                            } catch {
-                                print("\n❌ Error creating test walk: \(error)")
-                                if let ckError = error as? CKError {
-                                    print("🔍 CloudKit error details:")
-                                    print("  - Error code: \(ckError.code.rawValue)")
-                                    print("  - Description: \(ckError.localizedDescription)")
-                                }
-                            }
-                        }
-                    }
-                    
-                    Button("Debug Walk Fetch") {
-                        Task {
-                            print("\n🔍 DEBUG: Walk Fetch for Dog")
-                            print("🐕 Dog: \(viewModel.dog.name ?? "Unknown")")
-                            print("📝 Details:")
-                            print("  - Record ID: \(viewModel.dog.recordID ?? "nil")")
-                            print("  - Is Shared: \(viewModel.dog.isShared ?? false)")
-                            print("  - Share Record ID: \(viewModel.dog.shareRecordID ?? "nil")")
-                            print("  - Share URL: \(viewModel.dog.shareURL ?? "nil")")
-                            
-                            do {
-                                let walks = try await CloudKitManager.shared.fetchWalks(for: viewModel.dog)
-                                print("\n✅ Successfully fetched \(walks.count) walks")
-                                for walk in walks {
-                                    print("\n🦮 Walk:")
-                                    print("  - Record ID: \(walk.recordID ?? "nil")")
-                                    print("  - Date: \(walk.date?.description ?? "nil")")
-                                    print("  - Type: \(walk.walkType?.displayName ?? "nil")")
-                                }
-                            } catch {
-                                print("\n❌ Error fetching walks: \(error)")
-                                if let ckError = error as? CKError {
-                                    print("🔍 CloudKit error details:")
-                                    print("  - Error code: \(ckError.code.rawValue)")
-                                    print("  - Description: \(ckError.localizedDescription)")
-                                    if let serverRecord = ckError.serverRecord {
-                                        print("  - Server record type: \(serverRecord.recordType)")
-                                        print("  - Server record zone: \(serverRecord.recordID.zoneID.zoneName)")
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    Button("Print Zone Info") {
-                        Task {
-                            await CloudKitManager.shared.debugPrintZoneInfo()
-                        }
-                    }
-                    
-                    Button("Force Refresh Walks") {
-                        Task {
-                            print("\n🔄 Force refreshing walks...")
-                            await viewModel.refreshWalks()
-                        }
-                    }
-                    
-                    Button("Check Walk References") {
-                        Task {
-                            print("\n🔍 Checking walk references...")
-                            if let walks = viewModel.dog.walks {
-                                print("📊 Local walks count: \(walks.count)")
-                                for walk in walks {
-                                    print("\n🦮 Walk Check:")
-                                    print("  - Walk ID: \(walk.recordID ?? "nil")")
-                                    print("  - Dog Reference Valid: \(walk.dog?.recordID == viewModel.dog.recordID)")
-                                    print("  - Zone Match: \(walk.dog?.isShared == viewModel.dog.isShared)")
-                                }
-                            } else {
-                                print("❌ No walks found in local context")
-                            }
-                        }
-                    }
-                }
             }
             .padding(.vertical)
         }
-        .background(Color(.systemGroupedBackground))
         .navigationTitle(viewModel.dog.name ?? "Dog Details")
-        .alert("Error", isPresented: $viewModel.showError) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(viewModel.errorMessage)
+        .sheet(isPresented: $viewModel.isShowingQRCode) {
+            if let qrCodeImage = viewModel.qrCodeImage {
+                VStack {
+                    Text("QR Code for \(viewModel.dog.name ?? "Dog")")
+                        .font(.headline)
+                        .padding()
+                    
+                    Image(uiImage: qrCodeImage)
+                        .interpolation(.none)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 250, height: 250)
+                    
+                    Text("Scan this code to share your dog's profile")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding()
+                    
+                    Button("Dismiss") {
+                        viewModel.isShowingQRCode = false
+                    }
+                    .padding()
+                }
+            } else {
+                Text("Unable to generate QR code")
+                    .padding()
+            }
         }
-        .task {
-            await viewModel.refreshWalks()
+        .onAppear {
+            // Set up Firestore listener when view appears
+            viewModel.onAppear()
+        }
+        .onDisappear {
+            // Clean up Firestore listener when view disappears
+            viewModel.onDisappear()
         }
     }
     
-    private func WalkLoggingSection() -> some View {
+    // MARK: - Computed Properties
+    
+    private var headerSection: some View {
+        DogDetailHeaderView(
+            dog: viewModel.dog,
+            showingQRCode: $viewModel.isShowingQRCode,
+            qrCodeImage: viewModel.qrCodeImage,
+            iconSize: iconSize,
+            onShare: viewModel.shareButtonTapped
+        )
+        .padding(.horizontal)
+    }
+    
+    private var loggingSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Log Walk")
                 .font(.headline)
             
-            HStack(spacing: 16) {
-                Button {
-                    Task {
-                        await viewModel.logWalk(.walk)
-                    }
-                } label: {
-                    Label("Walk", systemImage: WalkType.walk.iconName)
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                
-                Button {
-                    Task {
-                        await viewModel.logWalk(.walkAndPoop)
-                    }
-                } label: {
-                    Label("Walk + Poop", systemImage: WalkType.walkAndPoop.iconName)
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.brown)
-            }
+            walkButtonsRow
         }
         .padding()
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .shadow(radius: 2)
+        .padding(.horizontal)
     }
     
-    private func WalkHistorySection() -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Walk History")
-                .font(.headline)
-            
-            if viewModel.isLoadingWalks {
-                ProgressView()
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding()
-            } else if let walks = viewModel.dog.walks, !walks.isEmpty {
-                ForEach(walks) { walk in
-                    HStack {
-                        Image(systemName: walk.walkType?.iconName ?? "figure.walk")
-                            .foregroundColor(.accentColor)
-                        
-                        VStack(alignment: .leading) {
-                            Text(walk.walkType?.displayName ?? "Walk")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                            if let date = walk.date {
-                                Text(date.formatted(date: .abbreviated, time: .shortened))
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        
-                        Spacer()
-                        
-                        if walk.walkType == .walkAndPoop {
-                            Image(systemName: "leaf.fill")
-                                .foregroundColor(.brown)
-                        }
-                    }
-                    .padding(.vertical, 8)
-                    Divider()
-                }
-            } else {
-                Text("No walks recorded yet")
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding()
+    private var walkButtonsRow: some View {
+        HStack(spacing: 16) {
+            walkButton
+            walkAndPoopButton
+        }
+    }
+    
+    private var walkButton: some View {
+        Button {
+            Task {
+                await viewModel.logWalk(.walk)
             }
+        } label: {
+            Label("Walk", systemImage: WalkType.walk.iconName)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+    }
+    
+    private var walkAndPoopButton: some View {
+        Button {
+            Task {
+                await viewModel.logWalk(.walkAndPoop)
+            }
+        } label: {
+            Label("Walk + Poop", systemImage: WalkType.walkAndPoop.iconName)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(.brown)
+    }
+    
+    private var historySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Walk History")
+                    .font(.headline)
+                
+                Spacer()
+                
+                // Add manual refresh button
+                Button {
+                    Task {
+                        await viewModel.refreshWalks()
+                    }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.subheadline)
+                }
+                .disabled(viewModel.isLoadingWalks)
+            }
+            
+            walkHistoryContent
         }
         .padding()
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .shadow(radius: 2)
-        .task {
-            // Only fetch walks when this section becomes visible
-            await viewModel.refreshWalks()
+        .padding(.horizontal)
+    }
+    
+    @ViewBuilder
+    private var walkHistoryContent: some View {
+        if viewModel.isLoadingWalks {
+            loadingView
+        } else if let walks = viewModel.dog.walks, !walks.isEmpty {
+            walksList(walks: walks)
+        } else {
+            emptyWalksView
         }
     }
+    
+    private var loadingView: some View {
+        ProgressView()
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding()
+    }
+    
+    private var emptyWalksView: some View {
+        Text("No walks recorded yet")
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding()
+    }
+    
+    private func walksList(walks: [Walk]) -> some View {
+        // Sort walks by date (newest first) to ensure correct order
+        let sortedWalks = walks.sorted { ($0.date ?? Date.distantPast) > ($1.date ?? Date.distantPast) }
+        
+        // Create a unique identifier for each walk that includes both ID and date
+        // This ensures ForEach has unique identifiers even if there are duplicate IDs
+        return ForEach(Array(zip(sortedWalks.indices, sortedWalks)), id: \.0) { index, walk in
+            walkRow(walk: walk)
+            Divider()
+        }
+    }
+    
+    private func walkRow(walk: Walk) -> some View {
+        HStack {
+            Image(systemName: walk.walkType?.iconName ?? "figure.walk")
+                .foregroundColor(.accentColor)
+            
+            walkInfo(walk: walk)
+            
+            Spacer()
+            
+            if walk.walkType == .walkAndPoop {
+                Image(systemName: "leaf.fill")
+                    .foregroundColor(.brown)
+            }
+        }
+        .padding(.vertical, 8)
+    }
+    
+    private func walkInfo(walk: Walk) -> some View {
+        VStack(alignment: .leading) {
+            Text(walk.walkType?.displayName ?? "Walk")
+                .font(.subheadline)
+                .fontWeight(.medium)
+            if let date = walk.date {
+                Text(date.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+    
 }
 
+// Header view - extracted to its own struct for clarity
 private struct DogDetailHeaderView: View {
     let dog: Dog
     @Binding var showingQRCode: Bool
@@ -289,28 +277,34 @@ private struct DogDetailHeaderView: View {
                 
                 Spacer()
                 
+                // Show QR code button for all dogs (both owned and shared)
+                Button {
+                    showingQRCode = true
+                } label: {
+                    Image(systemName: "qrcode")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: iconSize, height: iconSize)
+                        .foregroundColor(.accentColor)
+                }
+                
+                // Only show share button for owned dogs
                 if !(dog.isShared ?? false) {
-                    Button(action: {
+                    Button {
                         Task {
                             await onShare()
                         }
-                    }) {
-                        Image(systemName: "qrcode")
-                            .font(.system(size: iconSize))
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: iconSize, height: iconSize)
                             .foregroundColor(.accentColor)
                     }
-                } else if let qrImage = qrCodeImage {
-                    Image(uiImage: qrImage)
-                        .interpolation(.none)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: iconSize * 2, height: iconSize * 2)
                 }
             }
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .shadow(radius: 1)
+            
+            // Dog breed section removed as the Dog model doesn't have a breed property
         }
     }
-} 
+}

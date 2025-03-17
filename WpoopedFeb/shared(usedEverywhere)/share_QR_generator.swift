@@ -68,7 +68,7 @@ class ShareQRGenerator {
         if let qrCodeData = qrCode.pngData() {
             dog.qrCodeData = qrCodeData
             Task {
-                await dog.saveToCloudKit()
+                await dog.saveToFirestore()
             }
         }
         

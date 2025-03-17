@@ -1,0 +1,60 @@
+// Copy these rules to your Firebase Console > Firestore Database > Rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow users to read and write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == userId || 
+        request.auth.token.sub == userId ||
+        // Allow anonymous users to write their own data
+        request.auth.token.firebase.sign_in_provider == 'anonymous'
+      );
+    }
+    
+    // Allow users to read and write their own dogs
+    match /dogs/{dogId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (
+        // Owner can write
+        (resource != null && resource.data.ownerID == request.auth.uid) || 
+        (resource != null && resource.data.ownerID == request.auth.token.sub) ||
+        // For new documents
+        request.resource.data.ownerID == request.auth.uid ||
+        request.resource.data.ownerID == request.auth.token.sub ||
+        // Allow anonymous users to write
+        request.auth.token.firebase.sign_in_provider == 'anonymous' ||
+        // Shared dogs
+        (resource != null && resource.data.isShared == true && exists(/databases/$(database)/documents/shares/{shareId}))
+      );
+    }
+    
+    // Allow users to read and write their own walks
+    match /walks/{walkId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (
+        // Owner can write
+        (resource != null && resource.data.ownerID == request.auth.uid) ||
+        (resource != null && resource.data.ownerID == request.auth.token.sub) ||
+        // For new documents
+        request.resource.data.ownerID == request.auth.uid ||
+        request.resource.data.ownerID == request.auth.token.sub ||
+        // Allow anonymous users to write
+        request.auth.token.firebase.sign_in_provider == 'anonymous'
+      );
+    }
+    
+    // Allow users to read and write shares they're involved in
+    match /shares/{shareId} {
+      allow read, write: if request.auth != null && (
+        (resource != null && resource.data.sharedByEmail == request.auth.token.email) ||
+        (resource != null && resource.data.sharedWithEmail == request.auth.token.email) ||
+        request.resource.data.sharedByEmail == request.auth.token.email ||
+        request.resource.data.sharedWithEmail == request.auth.token.email ||
+        // Allow anonymous users to write
+        request.auth.token.firebase.sign_in_provider == 'anonymous'
+      );
+    }
+  }
+} 

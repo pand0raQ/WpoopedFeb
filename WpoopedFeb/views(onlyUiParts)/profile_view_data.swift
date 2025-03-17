@@ -12,7 +12,7 @@ struct ProfileView: View {
             // User Profile Section
             Section("Profile Information") {
                 if let user = viewModel.userDetails {
-                    LabeledContent("Name", value: user.name)
+                    LabeledContent("Name", value: user.displayName ?? "Not provided")
                     LabeledContent("Email", value: user.email)
                     LabeledContent("Member Since", value: user.formattedSignUpDate)
                 }

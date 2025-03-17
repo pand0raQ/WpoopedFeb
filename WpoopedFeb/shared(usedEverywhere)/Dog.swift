@@ -1,15 +1,17 @@
 import Foundation
 import SwiftData
 import UIKit
-import CloudKit
+import FirebaseFirestore
+import FirebaseStorage
+import FirebaseAuth
 
-protocol CloudKitSyncable {
-    func toCKRecord() -> CKRecord
-    static func fromCKRecord(_ record: CKRecord) throws -> Self
+protocol FirestoreSyncable {
+    func toFirestoreData() -> [String: Any]
+    static func fromFirestoreDocument(_ document: DocumentSnapshot) async throws -> Self
 }
 
 @Model
-final class Dog {
+final class Dog: FirestoreSyncable {
     var id: UUID?
     var name: String?
     var imageData: Data?
@@ -21,16 +23,17 @@ final class Dog {
     var recordID: String?
     var lastModified: Date?
     var isShareAccepted: Bool = false
+    var shareOwnerName: String?
     
     @Relationship(deleteRule: .cascade)
     var walks: [Walk]? = []
     
     @Transient
-    private var _assetRecord: CKAsset?
+    private var _imageURL: String?
     
-    var assetRecord: CKAsset? {
-        get { _assetRecord }
-        set { _assetRecord = newValue }
+    var imageURL: String? {
+        get { _imageURL }
+        set { _imageURL = newValue }
     }
     
     // QR code stored in UserDefaults with proper key management
@@ -51,20 +54,29 @@ final class Dog {
         }
     }
     
-    init(name: String, ownerID: String = AuthManager.shared.currentUser()?.id ?? "", shouldSaveToCloudKit: Bool = true) {
+    init(name: String, ownerID: String = AuthManager.shared.currentUser()?.id ?? "", shouldSaveToFirestore: Bool = true) {
         self.id = UUID()
         self.name = name
         self.createdAt = Date()
-        self.ownerID = ownerID
+        
+        // Use Firebase UID if available, otherwise use Apple ID
+        if let firebaseUID = Auth.auth().currentUser?.uid {
+            self.ownerID = firebaseUID
+            print("✅ Using Firebase UID for dog owner: \(firebaseUID)")
+        } else {
+            self.ownerID = ownerID
+            print("⚠️ No Firebase UID available, using provided owner ID: \(ownerID)")
+        }
+        
         self.isShared = false
         self.recordID = id?.uuidString
         self.lastModified = Date()
         self.imageData = nil
         self.shareURL = nil
         
-        if shouldSaveToCloudKit {
+        if shouldSaveToFirestore {
             Task {
-                await saveToCloudKit()
+                await saveToFirestore()
             }
         }
     }
@@ -75,89 +87,90 @@ final class Dog {
     }
     
     @MainActor
-    func saveToCloudKit() async {
+    func saveToFirestore() async {
         do {
-            // Create asset if needed
-            if let imageData = imageData {
-                assetRecord = CloudKitManager.createAsset(from: imageData, filename: "\(id ?? UUID()).jpg")
-            }
-            
-            let savedRecord = try await CloudKitManager.shared.save(self)
-            print("✅ Dog '\(name ?? "")' saved to CloudKit: \(savedRecord.recordID.recordName)")
+            let documentID = try await FirestoreManager.shared.saveDog(self)
+            print("✅ Dog '\(name ?? "")' saved to Firestore with ID: \(documentID)")
         } catch {
-            print("❌ Failed to save dog '\(name ?? "")' to CloudKit: \(error.localizedDescription)")
+            print("❌ Failed to save dog '\(name ?? "")' to Firestore: \(error.localizedDescription)")
         }
     }
 }
 
-extension Dog: CloudKitSyncable {
-    static let recordType = "Dog"
-    static let zoneID = CKRecordZone.ID(zoneName: "DogsZone", ownerName: CKCurrentUserDefaultName)
-    
-    nonisolated func toCKRecord() -> CKRecord {
-        let recordID = CKRecord.ID(recordName: self.recordID ?? "", zoneID: Dog.zoneID)
-        let record = CKRecord(recordType: Dog.recordType, recordID: recordID)
+extension Dog {
+    func toFirestoreData() -> [String: Any] {
+        var data: [String: Any] = [
+            "name": name ?? "",
+            "ownerID": ownerID ?? "",
+            "isShared": isShared ?? false,
+            "lastModified": lastModified ?? Date(),
+            "createdAt": createdAt ?? Date(),
+            "id": id?.uuidString ?? "",
+            "isShareAccepted": isShareAccepted
+        ]
         
-        // Set basic fields
-        record["name"] = name
-        record["ownerID"] = ownerID
-        record["isShared"] = isShared
-        record["lastModified"] = lastModified
-        record["createdAt"] = createdAt
-        record["id"] = id?.uuidString
-        record["isShareAccepted"] = isShareAccepted
-        
-        // Set optional fields
+        // Add optional fields
         if let shareURL = shareURL {
-            record["shareURL"] = shareURL
-        }
-        
-        if let assetRecord = assetRecord {
-            record["imageData"] = assetRecord
+            data["shareURL"] = shareURL
         }
         
         if let shareRecordID = shareRecordID {
-            record["shareRecordID"] = shareRecordID
+            data["shareRecordID"] = shareRecordID
         }
         
-        return record
+        if let shareOwnerName = shareOwnerName {
+            data["shareOwnerName"] = shareOwnerName
+        }
+        
+        if let imageURL = imageURL {
+            data["imageURL"] = imageURL
+        }
+        
+        return data
     }
     
-    static func fromCKRecord(_ record: CKRecord) throws -> Dog {
-        guard let name = record["name"] as? String,
-              let ownerID = record["ownerID"] as? String else {
-            throw CloudKitManagerError.unexpectedRecordType
+    static func fromFirestoreDocument(_ document: DocumentSnapshot) async throws -> Dog {
+        guard let data = document.data(),
+              let name = data["name"] as? String,
+              let ownerID = data["ownerID"] as? String else {
+            throw FirestoreError.unexpectedDocumentType
         }
         
-        // Create dog without auto-saving to CloudKit
-        let dog = Dog(name: name, ownerID: ownerID, shouldSaveToCloudKit: false)
-        dog.recordID = record.recordID.recordName
+        // Create dog without auto-saving to Firestore
+        let dog = Dog(name: name, ownerID: ownerID, shouldSaveToFirestore: false)
+        dog.recordID = document.documentID
         
         // Set sharing fields
-        if let shareRecordID = record["shareRecordID"] as? String {
+        if let shareRecordID = data["shareRecordID"] as? String {
             dog.shareRecordID = shareRecordID
-            if let shareURL = record["shareURL"] as? String {
+            if let shareURL = data["shareURL"] as? String {
                 dog.shareURL = shareURL
                 dog.isShared = true
             }
         }
         
         // Set other fields
-        dog.isShareAccepted = record["isShareAccepted"] as? Bool ?? false
-        dog.lastModified = record["lastModified"] as? Date ?? Date()
-        dog.createdAt = record["createdAt"] as? Date ?? Date()
+        dog.isShareAccepted = data["isShareAccepted"] as? Bool ?? false
+        dog.lastModified = (data["lastModified"] as? Timestamp)?.dateValue() ?? Date()
+        dog.createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
         
-        if let idString = record["id"] as? String,
-           let uuid = UUID(uuidString: idString) {
+        if let idString = data["id"] as? String, let uuid = UUID(uuidString: idString) {
             dog.id = uuid
         }
         
-        // Load assets
-        if let asset = record["imageData"] as? CKAsset,
-           let url = asset.fileURL,
-           let data = try? Data(contentsOf: url) {
-            dog.imageData = data
+        // Handle image URL if present
+        if let imageURL = data["imageURL"] as? String {
+            dog.imageURL = imageURL
+            
+            // Download the image data
+            do {
+                let url = URL(string: imageURL)!
+                dog.imageData = try await FirestoreManager.shared.downloadImage(from: url)
+            } catch {
+                print("❌ Failed to download image data: \(error.localizedDescription)")
+            }
         }
+        dog.shareOwnerName = data["shareOwnerName"] as? String
         
         return dog
     }

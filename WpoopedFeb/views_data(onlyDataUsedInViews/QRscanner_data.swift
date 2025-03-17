@@ -1,7 +1,7 @@
 import AVFoundation
-import CloudKit
 import SwiftUI
 import SwiftData
+import FirebaseFirestore
 
 @MainActor
 class QRCodeScannerViewModel: NSObject, ObservableObject {
@@ -17,7 +17,7 @@ class QRCodeScannerViewModel: NSObject, ObservableObject {
     @Published var shareAcceptanceStatus: String = ""
     
     // MARK: - Private Properties
-    private let sharingManager = CloudKitSharingManager.shared
+    private let sharingManager = FirebaseSharingManager.shared
     private var lastScannedCode: String?
     private let modelContext: ModelContext
     
@@ -55,11 +55,18 @@ class QRCodeScannerViewModel: NSObject, ObservableObject {
     private func processShareURL(_ url: URL) async {
         isProcessingShare = true
         shareError = nil
-        shareAcceptanceStatus = "Testing..."
+        shareAcceptanceStatus = "Processing share..."
         
         do {
-            // Fetch share metadata using CloudKitSharingManager
-            let metadata = try await sharingManager.getShareMetadata(from: url)
+            // Extract share ID from URL
+            guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                  let queryItems = components.queryItems,
+                  let shareID = queryItems.first(where: { $0.name == "id" })?.value else {
+                throw FirestoreError.invalidShareURL
+            }
+            
+            // Fetch share metadata using FirebaseSharingManager
+            let metadata = try await sharingManager.getShareMetadata(shareID: shareID)
             await MainActor.run {
                 self.shareMetadata = metadata
                 self.showingShareAcceptance = true
@@ -87,8 +94,15 @@ class QRCodeScannerViewModel: NSObject, ObservableObject {
         }
         
         do {
-            // Use the injected modelContext instead of creating a new one
-            try await sharingManager.acceptShare(from: url, context: modelContext)
+            // Extract share ID from URL
+            guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                  let queryItems = components.queryItems,
+                  let shareID = queryItems.first(where: { $0.name == "id" })?.value else {
+                throw FirestoreError.invalidShareURL
+            }
+            
+            // Accept share using FirebaseSharingManager
+            try await sharingManager.acceptShare(shareID: shareID, context: modelContext)
             
             await MainActor.run {
                 shareAcceptanceStatus = "✅ Share accepted successfully"

@@ -2,7 +2,7 @@
 
 import SwiftUI
 import SwiftData
-import CloudKit
+import FirebaseFirestore
 
 struct DogsListView: View {
     @Environment(\.modelContext) private var modelContext
@@ -36,9 +36,82 @@ struct DogsListView: View {
                     }
                 }
                 
-                Button("Print CloudKit Zones") {
+                Button("Print Firestore Dogs") {
                     Task {
-                        await CloudKitManager.shared.debugPrintZoneInfo()
+                        do {
+                            let dogs = try await FirestoreManager.shared.fetchDogs()
+                            print("📊 Fetched \(dogs.count) dogs from Firestore")
+                            for dog in dogs {
+                                print("Dog: \(dog.name ?? "Unknown"), isShared: \(dog.isShared ?? false), shareID: \(dog.shareRecordID ?? "none")")
+                            }
+                        } catch {
+                            print("❌ Error fetching dogs: \(error.localizedDescription)")
+                        }
+                    }
+                }
+                
+                Button("Create Real Dog in Firestore") {
+                    Task {
+                        do {
+                            // Ensure Firebase is authenticated
+                            FirestoreManager.shared.printFirebaseAuthStatus()
+                            
+                            // Create a new dog with the current user ID
+                            let newDog = Dog(name: "Real Firestore Dog", shouldSaveToFirestore: true)
+                            
+                            // Add to local context
+                            modelContext.insert(newDog)
+                            
+                            print("✅ Created new dog in Firestore and local context")
+                        } catch {
+                            print("❌ Error creating dog: \(error.localizedDescription)")
+                        }
+                    }
+                }
+                
+                Button("Clear Sample Dogs") {
+                    Task {
+                        // Find all dogs with "Sample" in the name
+                        let descriptor = FetchDescriptor<Dog>(predicate: #Predicate { dog in
+                            dog.name?.contains("Sample") == true
+                        })
+                        
+                        do {
+                            let sampleDogs = try modelContext.fetch(descriptor)
+                            print("🔍 Found \(sampleDogs.count) sample dogs to delete")
+                            
+                            for dog in sampleDogs {
+                                modelContext.delete(dog)
+                            }
+                            
+                            print("🗑️ Deleted all sample dogs")
+                        } catch {
+                            print("❌ Error clearing sample dogs: \(error.localizedDescription)")
+                        }
+                    }
+                }
+                
+                Button("Debug Firebase Auth") {
+                    Task {
+                        FirestoreManager.shared.printFirebaseAuthStatus()
+                        
+                        // Try to force auth update
+                        AuthDebugger.shared.forceUpdateAuthState()
+                        
+                        // Wait a moment and check again
+                        try? await Task.sleep(nanoseconds: 1_000_000_000)
+                        FirestoreManager.shared.printFirebaseAuthStatus()
+                        
+                        // Try to fetch dogs again
+                        do {
+                            let isAuthenticated = await FirestoreManager.shared.ensureFirebaseAuth()
+                            print("✅ Firebase authenticated: \(isAuthenticated)")
+                            
+                            let dogs = try await FirestoreManager.shared.fetchDogs()
+                            print("📊 Fetched \(dogs.count) dogs from Firestore after auth check")
+                        } catch {
+                            print("❌ Error fetching dogs after auth check: \(error.localizedDescription)")
+                        }
                     }
                 }
                 
@@ -48,58 +121,40 @@ struct DogsListView: View {
                     print("🔄 Context refreshed")
                 }
                 
-                Button("Check Shared Dog") {
+                Button("Check Shared Dogs") {
                     Task {
                         do {
-                            let container = CKContainer(identifier: CloudKitManager.containerIdentifier)
+                            // Get all shares from Firestore
+                            let db = Firestore.firestore()
+                            let snapshot = try await db.collection("shares").whereField("sharedWithEmail", isEqualTo: AuthManager.shared.currentUser()?.email ?? "").getDocuments()
                             
-                            // First get the share record
-                            let shareZoneID = CKRecordZone.ID(zoneName: "DogsZone", ownerName: "_95f15e1388a74c44496595cb77c50953")
-                            let shareRecordID = CKRecord.ID(recordName: "Share-89E50232-0877-42D1-B878-75D011C88836", zoneID: shareZoneID)
+                            print("🔄 Found \(snapshot.documents.count) shares")
                             
-                            print("🔄 Fetching share record...")
-                            let share = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CKRecord, Error>) in
-                                container.sharedCloudDatabase.fetch(withRecordID: shareRecordID) { record, error in
-                                    if let error = error {
-                                        continuation.resume(throwing: error)
-                                        return
+                            for document in snapshot.documents {
+                                guard let dogID = document.data()["dogID"] as? String else { continue }
+                                
+                                print("🔄 Fetching shared dog with ID: \(dogID)")
+                                let dogDoc = try await db.collection("dogs").document(dogID).getDocument()
+                                
+                                if dogDoc.exists {
+                                    let dog = try await Dog.fromFirestoreDocument(dogDoc)
+                                    print("✅ Found shared dog: \(dog.name ?? "Unknown")")
+                                    
+                                    // Check if already in context
+                                    let descriptor = FetchDescriptor<Dog>(predicate: #Predicate { $0.id?.uuidString == dogID })
+                                    if let _ = try? modelContext.fetch(descriptor).first {
+                                        print("ℹ️ Dog already exists in context")
+                                    } else {
+                                        // Add to context
+                                        dog.isShared = true
+                                        dog.shareRecordID = document.documentID
+                                        modelContext.insert(dog)
+                                        print("✅ Added shared dog to context")
                                     }
-                                    guard let record = record else {
-                                        continuation.resume(throwing: CloudKitManagerError.recordNotFound)
-                                        return
-                                    }
-                                    continuation.resume(returning: record)
                                 }
-                            }
-                            print("✅ Found share record: \(share)")
-                            
-                            // Then get the dog record through the share
-                            let dogZoneID = share.recordID.zoneID
-                            let dogRecordID = CKRecord.ID(recordName: "F4ACC5EE-2A96-4F23-9B54-F2E5FD40AD98", zoneID: dogZoneID)
-                            
-                            print("🔄 Fetching dog record...")
-                            let record = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CKRecord, Error>) in
-                                container.sharedCloudDatabase.fetch(withRecordID: dogRecordID) { record, error in
-                                    if let error = error {
-                                        continuation.resume(throwing: error)
-                                        return
-                                    }
-                                    guard let record = record else {
-                                        continuation.resume(throwing: CloudKitManagerError.recordNotFound)
-                                        return
-                                    }
-                                    continuation.resume(returning: record)
-                                }
-                            }
-                            print("✅ Found dog record: \(record)")
-                            
-                            if let dog = try? Dog.fromCKRecord(record) {
-                                print("✅ Successfully converted to Dog: \(dog.name ?? "Unknown")")
-                                modelContext.insert(dog)
-                                try modelContext.save()
                             }
                         } catch {
-                            print("❌ Error checking shared dog: \(error)")
+                            print("❌ Error checking shared dogs: \(error.localizedDescription)")
                         }
                     }
                 }

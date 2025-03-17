@@ -1,0 +1,6 @@
+framework module Pods_WpoopedFeb {
+  umbrella header "Pods-WpoopedFeb-umbrella.h"
+
+  export *
+  module * { export * }
+}

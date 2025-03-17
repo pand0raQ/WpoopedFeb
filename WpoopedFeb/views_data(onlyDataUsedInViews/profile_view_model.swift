@@ -6,7 +6,7 @@ class ProfileViewModel: ObservableObject {
     private let authManager = AuthManager.shared
     private let modelContext: ModelContext
     
-    @Published var userDetails: AuthManager.UserData?
+    @Published var userDetails: User?
     @Published var alertItem: AlertItem?
     
     init(modelContext: ModelContext) {
@@ -19,7 +19,14 @@ class ProfileViewModel: ObservableObject {
     }
     
     func signOut() {
-        authManager.signOut()
+        do {
+            try authManager.signOut()
+        } catch {
+            alertItem = AlertItem(
+                title: "Error",
+                message: "Failed to sign out: \(error.localizedDescription)"
+            )
+        }
     }
     
     func deleteAllUserData() async {
@@ -27,7 +34,7 @@ class ProfileViewModel: ObservableObject {
             // Delete all local data
             try await deleteLocalData()
             // Sign out
-            authManager.signOut()
+            try authManager.signOut()
         } catch {
             alertItem = AlertItem(
                 title: "Error",
@@ -37,12 +44,17 @@ class ProfileViewModel: ObservableObject {
     }
     
     private func deleteLocalData() async throws {
-        // Delete all dogs from CloudKit first
+        // Delete all dogs from Firestore first
         let dogsDescriptor = FetchDescriptor<Dog>()
         let dogs = try modelContext.fetch(dogsDescriptor)
         for dog in dogs {
             if !(dog.isShared ?? false) {  // Handle optional Bool with nil-coalescing
-                try? await CloudKitManager.shared.delete(dog.toCKRecord())
+                do {
+                    try await FirestoreManager.shared.deleteDog(dog)
+                } catch {
+                    print("Error deleting dog from Firestore: \(error.localizedDescription)")
+                    // Continue with other dogs even if one fails
+                }
             }
         }
         
