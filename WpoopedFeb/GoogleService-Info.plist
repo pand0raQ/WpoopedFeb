@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyB7rAwkTSW1pwY0r0KEzvWkXV5l4I0PtAM</string>
+	<key>GCM_SENDER_ID</key>
+	<string>433372452866</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>bumblebee.WpoopedFeb</string>
+	<key>PROJECT_ID</key>
+	<string>wpoopedfeb</string>
+	<key>STORAGE_BUCKET</key>
+	<string>wpoopedfeb.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:433372452866:ios:148625f70553d73a916f1b</string>
+</dict>
+</plist>
