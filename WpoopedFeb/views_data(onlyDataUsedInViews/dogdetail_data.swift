@@ -428,6 +428,23 @@ class DogDetailViewModel: ObservableObject {
                 return try await FirestoreManager.shared.saveWalk(walk)
             }.value
             
+            // NEW: Update shared data for widget immediately after successful Firestore save
+            if let dogID = dog.id?.uuidString,
+               let walkID = walk.id?.uuidString,
+               let walkDate = walk.date {
+                
+                let walkData = WalkData(
+                    id: walkID,
+                    dogID: dogID,
+                    date: walkDate,
+                    walkType: type,
+                    ownerName: AuthManager.shared.currentUser()?.displayName
+                )
+                
+                SharedDataManager.shared.saveLatestWalk(dogID: dogID, walkData: walkData)
+                print("📱 Updated widget data for walk: \(type.displayName)")
+            }
+            
             // Notify observers that the object will change
             objectWillChange.send()
             

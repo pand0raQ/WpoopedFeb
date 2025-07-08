@@ -78,10 +78,21 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         print("📳 Received remote notification")
         
-        // Process the notification
-        handleNotification(userInfo: userInfo)
-        
-        completionHandler(.newData)
+        // Check if this is a walk update notification that needs background processing
+        if let notificationType = userInfo["type"] as? String,
+           notificationType == "walk_update" {
+            print("🚶‍♂️ Processing walk update notification in background")
+            
+            // Process walk update in background
+            Task {
+                await handleBackgroundWalkUpdate(userInfo: userInfo)
+                completionHandler(.newData)
+            }
+        } else {
+            // Process other notifications normally
+            handleNotification(userInfo: userInfo)
+            completionHandler(.newData)
+        }
     }
     
     // Process Firebase notifications
@@ -92,6 +103,70 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             
             // Post notification for app to handle
             NotificationCenter.default.post(name: .firestoreDataChanged, object: nil, userInfo: userInfo)
+        }
+    }
+    
+    // Handle walk update notifications in background
+    private func handleBackgroundWalkUpdate(userInfo: [AnyHashable: Any]) async {
+        guard let dogID = userInfo["dogID"] as? String else {
+            print("❌ No dogID in walk update notification")
+            return
+        }
+        
+        print("🔄 Handling background walk update for dog: \(dogID)")
+        
+        do {
+            // Fetch the latest walk data from Firebase
+            let db = FirebaseConfigurationManager.shared.getFirestore()
+            
+            // Get the most recent walk for this dog
+            let walksQuery = db.collection("walks")
+                .whereField("dogID", isEqualTo: dogID)
+                .order(by: "date", descending: true)
+                .limit(to: 1)
+            
+            let snapshot = try await walksQuery.getDocuments()
+            
+            if let document = snapshot.documents.first {
+                // Convert to WalkData for widget
+                let data = document.data()
+                
+                guard let walkTypeRaw = data["walkType"] as? Int,
+                      let walkType = WalkType(rawValue: walkTypeRaw),
+                      let date = (data["date"] as? Timestamp)?.dateValue() else {
+                    print("❌ Invalid walk data in notification")
+                    return
+                }
+                
+                let walkData = WalkData(
+                    id: document.documentID,
+                    dogID: dogID,
+                    date: date,
+                    walkType: walkType,
+                    ownerName: userInfo["ownerName"] as? String
+                )
+                
+                // Update shared data for widget
+                SharedDataManager.shared.saveLatestWalk(dogID: dogID, walkData: walkData)
+                
+                // Trigger widget timeline refresh
+                SharedDataManager.shared.updateWidgetTimeline(for: dogID)
+                
+                print("✅ Updated widget data from background notification")
+                
+                // Also post notification for the main app if it's active
+                await MainActor.run {
+                    NotificationCenter.default.post(
+                        name: .firestoreDataChanged,
+                        object: nil,
+                        userInfo: ["walkID": document.documentID, "dogID": dogID, "source": "background_notification"]
+                    )
+                }
+            } else {
+                print("⚠️ No walk found for background update")
+            }
+        } catch {
+            print("❌ Error handling background walk update: \(error.localizedDescription)")
         }
     }
     

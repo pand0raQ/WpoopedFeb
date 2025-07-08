@@ -18,6 +18,16 @@
 			<key>orderHint</key>
 			<integer>2</integer>
 		</dict>
+		<key>Firebase-Auth-Core-CoreOnly-Firestore-Storage.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>4</integer>
+		</dict>
+		<key>Firebase-fc1b9f38.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>5</integer>
+		</dict>
 		<key>Firebase.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -227,6 +237,11 @@
 			<false/>
 			<key>orderHint</key>
 			<integer>42</integer>
+		</dict>
+		<key>Pods-WpoopedFebWidgetExtensionExtension.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>44</integer>
 		</dict>
 		<key>PromisesObjC-FBLPromises_Privacy.xcscheme</key>
 		<dict>

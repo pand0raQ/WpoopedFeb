@@ -7,11 +7,42 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		15DF778B2E1C25620032E5BC /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 15DF778A2E1C25620032E5BC /* WidgetKit.framework */; };
+		15DF778D2E1C25620032E5BC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 15DF778C2E1C25620032E5BC /* SwiftUI.framework */; };
+		15DF779A2E1C25650032E5BC /* WpoopedFebWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 15DF77892E1C25610032E5BC /* WpoopedFebWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		6FF70FD1A05D05F5AA09AB76 /* Pods_WpoopedFeb.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F5208C621038EC0FEC7B366B /* Pods_WpoopedFeb.framework */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		15DF77982E1C25650032E5BC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 15DA5D722D5653D9001532AE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 15DF77882E1C25610032E5BC;
+			remoteInfo = WpoopedFebWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		15DF779F2E1C25650032E5BC /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				15DF779A2E1C25650032E5BC /* WpoopedFebWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		15DA5D7A2D5653D9001532AE /* WpoopedFeb.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WpoopedFeb.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		15DF77892E1C25610032E5BC /* WpoopedFebWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WpoopedFebWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		15DF778A2E1C25620032E5BC /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		15DF778C2E1C25620032E5BC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		15DF77A22E1C25900032E5BC /* WpoopedFebWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = WpoopedFebWidgetExtension.entitlements; path = WpoopedFebWidgetExtension/WpoopedFebWidgetExtension.entitlements; sourceTree = "<group>"; };
 		162278B300AC8116395F6F89 /* Pods-WpoopedFeb.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WpoopedFeb.debug.xcconfig"; path = "Target Support Files/Pods-WpoopedFeb/Pods-WpoopedFeb.debug.xcconfig"; sourceTree = "<group>"; };
 		99B7B53FDDF34D1C93A45B44 /* Pods-WpoopedFeb.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WpoopedFeb.release.xcconfig"; path = "Target Support Files/Pods-WpoopedFeb/Pods-WpoopedFeb.release.xcconfig"; sourceTree = "<group>"; };
 		F5208C621038EC0FEC7B366B /* Pods_WpoopedFeb.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_WpoopedFeb.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -25,6 +56,13 @@
 			);
 			target = 15DA5D792D5653D9001532AE /* WpoopedFeb */;
 		};
+		15DF779E2E1C25650032E5BC /* Exceptions for "WpoopedFebWidget" folder in "WpoopedFebWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 15DF77882E1C25610032E5BC /* WpoopedFebWidgetExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -34,6 +72,14 @@
 				15DA5D8A2D5653DC001532AE /* Exceptions for "WpoopedFeb" folder in "WpoopedFeb" target */,
 			);
 			path = WpoopedFeb;
+			sourceTree = "<group>";
+		};
+		15DF778E2E1C25620032E5BC /* WpoopedFebWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				15DF779E2E1C25650032E5BC /* Exceptions for "WpoopedFebWidget" folder in "WpoopedFebWidgetExtension" target */,
+			);
+			path = WpoopedFebWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -47,13 +93,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		15DF77862E1C25610032E5BC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				15DF778D2E1C25620032E5BC /* SwiftUI.framework in Frameworks */,
+				15DF778B2E1C25620032E5BC /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		15DA5D712D5653D9001532AE = {
 			isa = PBXGroup;
 			children = (
+				15DF77A22E1C25900032E5BC /* WpoopedFebWidgetExtension.entitlements */,
 				15DA5D7C2D5653D9001532AE /* WpoopedFeb */,
+				15DF778E2E1C25620032E5BC /* WpoopedFebWidget */,
 				15DA5D7B2D5653D9001532AE /* Products */,
 				3A3A6DECF92A58A4159072D6 /* Pods */,
 				950C32E364504E47D243BE89 /* Frameworks */,
@@ -64,6 +121,7 @@
 			isa = PBXGroup;
 			children = (
 				15DA5D7A2D5653D9001532AE /* WpoopedFeb.app */,
+				15DF77892E1C25610032E5BC /* WpoopedFebWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -81,6 +139,8 @@
 			isa = PBXGroup;
 			children = (
 				F5208C621038EC0FEC7B366B /* Pods_WpoopedFeb.framework */,
+				15DF778A2E1C25620032E5BC /* WidgetKit.framework */,
+				15DF778C2E1C25620032E5BC /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -97,10 +157,12 @@
 				15DA5D772D5653D9001532AE /* Frameworks */,
 				15DA5D782D5653D9001532AE /* Resources */,
 				AC723BC18159BDC3881D341E /* [CP] Embed Pods Frameworks */,
+				15DF779F2E1C25650032E5BC /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				15DF77992E1C25650032E5BC /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				15DA5D7C2D5653D9001532AE /* WpoopedFeb */,
@@ -110,6 +172,28 @@
 			productReference = 15DA5D7A2D5653D9001532AE /* WpoopedFeb.app */;
 			productType = "com.apple.product-type.application";
 		};
+		15DF77882E1C25610032E5BC /* WpoopedFebWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 15DF779B2E1C25650032E5BC /* Build configuration list for PBXNativeTarget "WpoopedFebWidgetExtension" */;
+			buildPhases = (
+				15DF77852E1C25610032E5BC /* Sources */,
+				15DF77862E1C25610032E5BC /* Frameworks */,
+				15DF77872E1C25610032E5BC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				15DF778E2E1C25620032E5BC /* WpoopedFebWidget */,
+			);
+			name = WpoopedFebWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = WpoopedFebWidgetExtension;
+			productReference = 15DF77892E1C25610032E5BC /* WpoopedFebWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -117,11 +201,14 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1620;
+				LastSwiftUpdateCheck = 1640;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
 					15DA5D792D5653D9001532AE = {
 						CreatedOnToolsVersion = 16.2;
+					};
+					15DF77882E1C25610032E5BC = {
+						CreatedOnToolsVersion = 16.4;
 					};
 				};
 			};
@@ -140,12 +227,20 @@
 			projectRoot = "";
 			targets = (
 				15DA5D792D5653D9001532AE /* WpoopedFeb */,
+				15DF77882E1C25610032E5BC /* WpoopedFebWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		15DA5D782D5653D9001532AE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		15DF77872E1C25610032E5BC /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -185,9 +280,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-WpoopedFeb/Pods-WpoopedFeb-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-WpoopedFeb/Pods-WpoopedFeb-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -204,7 +303,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		15DF77852E1C25610032E5BC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		15DF77992E1C25650032E5BC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 15DF77882E1C25610032E5BC /* WpoopedFebWidgetExtension */;
+			targetProxy = 15DF77982E1C25650032E5BC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		15DA5D8C2D5653DC001532AE /* Debug */ = {
@@ -409,6 +523,71 @@
 			};
 			name = Release;
 		};
+		15DF779C2E1C25650032E5BC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = WpoopedFebWidgetExtension/WpoopedFebWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = C77N4S9VR3;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WpoopedFebWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WpoopedFebWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = bumblebee.WpoopedFeb.WpoopedFebWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		15DF779D2E1C25650032E5BC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = WpoopedFebWidgetExtension/WpoopedFebWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = C77N4S9VR3;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WpoopedFebWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WpoopedFebWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = bumblebee.WpoopedFeb.WpoopedFebWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -426,6 +605,15 @@
 			buildConfigurations = (
 				15DA5D8C2D5653DC001532AE /* Debug */,
 				15DA5D8D2D5653DC001532AE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		15DF779B2E1C25650032E5BC /* Build configuration list for PBXNativeTarget "WpoopedFebWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				15DF779C2E1C25650032E5BC /* Debug */,
+				15DF779D2E1C25650032E5BC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
