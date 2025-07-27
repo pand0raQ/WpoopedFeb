@@ -3,6 +3,10 @@ import FirebaseCore
 import FirebaseFirestore
 import UserNotifications
 
+extension NSNotification.Name {
+    static let firestoreDataChanged = NSNotification.Name("firestoreDataChanged")
+}
+
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {

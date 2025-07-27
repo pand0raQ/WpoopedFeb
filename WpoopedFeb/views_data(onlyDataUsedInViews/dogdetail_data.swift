@@ -356,6 +356,57 @@ class DogDetailViewModel: ObservableObject {
             generateQRCodeFromURL(shareURL)
             // Don't automatically show QR code
             // isShowingQRCode = true
+        } else {
+            // Generate QR code even if no shareURL exists yet
+            Task {
+                await generateQRCodeForUnsharedDog()
+            }
+        }
+    }
+    
+    private func generateQRCodeForUnsharedDog() async {
+        // Create a sharing URL for the dog if it doesn't exist
+        do {
+            guard let currentUser = AuthManager.shared.currentUser() else {
+                print("❌ No authenticated user for QR code generation")
+                return
+            }
+            
+            // Create a share using Firebase
+            let shareURL = try await FirebaseSharingManager.shared.shareDog(dog, withEmail: currentUser.email)
+            
+            // Generate QR code from the share URL
+            await MainActor.run {
+                generateQRCodeFromURL(shareURL)
+            }
+        } catch {
+            print("❌ Failed to generate QR code for unshared dog: \(error.localizedDescription)")
+            
+            // Fallback: Create a basic QR code with dog info
+            await MainActor.run {
+                generateFallbackQRCode()
+            }
+        }
+    }
+    
+    private func generateFallbackQRCode() {
+        // Generate a simple QR code with basic dog information
+        guard let dogId = dog.id?.uuidString else {
+            print("❌ Cannot generate fallback QR code: Dog ID is nil")
+            return
+        }
+        
+        let fallbackURL = "wpooped://dog?id=\(dogId)&name=\(dog.name?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "unknown")"
+        
+        if let url = URL(string: fallbackURL),
+           let qrCode = ShareQRGenerator.shared.generateQRCode(from: url) {
+            if let qrData = qrCode.pngData() {
+                dog.qrCodeData = qrData
+            }
+            qrCodeImage = qrCode
+            print("✅ Generated fallback QR code for dog")
+        } else {
+            print("❌ Failed to generate fallback QR code")
         }
     }
     
