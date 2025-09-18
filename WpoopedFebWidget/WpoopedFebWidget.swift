@@ -7,39 +7,45 @@
 
 import WidgetKit
 import SwiftUI
+import AppIntents
 
 // MARK: - Timeline Provider
-struct WalkWidgetProvider: TimelineProvider {
+struct WalkWidgetProvider: AppIntentTimelineProvider {
     typealias Entry = WalkWidgetEntry
+    typealias Intent = DogSelectionConfigurationIntent
     
     func placeholder(in context: Context) -> WalkWidgetEntry {
         WalkWidgetEntry.placeholder
     }
     
-    func getSnapshot(in context: Context, completion: @escaping (WalkWidgetEntry) -> Void) {
-        let entry = createEntry()
-        completion(entry)
+    func snapshot(for configuration: DogSelectionConfigurationIntent, in context: Context) async -> WalkWidgetEntry {
+        return createEntry(for: configuration)
     }
     
-    func getTimeline(in context: Context, completion: @escaping (Timeline<WalkWidgetEntry>) -> Void) {
-        let currentEntry = createEntry()
+    func timeline(for configuration: DogSelectionConfigurationIntent, in context: Context) async -> Timeline<WalkWidgetEntry> {
+        let currentEntry = createEntry(for: configuration)
         
-        // Refresh every 15 minutes or when significant events occur
-        let nextRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: Date())!
-        let timeline = Timeline(entries: [currentEntry], policy: .after(nextRefresh))
-        
-        completion(timeline)
+        // ULTRA-AGGRESSIVE refresh for widget-first experience
+        // Refresh every 30 seconds to ensure users always see fresh data
+        let nextRefresh = Calendar.current.date(byAdding: .second, value: 30, to: Date())!
+        return Timeline(entries: [currentEntry], policy: .after(nextRefresh))
     }
     
-    private func createEntry() -> WalkWidgetEntry {
+    private func createEntry(for configuration: DogSelectionConfigurationIntent? = nil) -> WalkWidgetEntry {
+        print("🔍 Widget Provider: Creating entry...")
         let dogs = SharedDataManager.shared.getAllDogs()
-        let settings = SharedDataManager.shared.getWidgetSettings()
+        print("🔍 Widget Provider: Got \(dogs.count) dogs")
+        for dog in dogs {
+            print("  - Widget Provider: \(dog.name) (ID: \(dog.id))")
+        }
         
-        return WalkWidgetEntry(
+        let entry = WalkWidgetEntry(
             date: Date(),
             dogs: dogs,
-            settings: settings
+            selectedDogID: configuration?.selectedDog?.id
         )
+        print("🔍 Widget Provider: Created entry with \(entry.dogs.count) dogs")
+        return entry
     }
 }
 
@@ -47,12 +53,12 @@ struct WalkWidgetProvider: TimelineProvider {
 struct WalkWidgetEntry: TimelineEntry {
     let date: Date
     let dogs: [DogData]
-    let settings: SharedDataManager.WidgetDisplaySettings
+    let selectedDogID: String?
     
     static let placeholder = WalkWidgetEntry(
         date: Date(),
         dogs: [DogData.sample],
-        settings: SharedDataManager.WidgetDisplaySettings()
+        selectedDogID: nil
     )
 }
 
@@ -66,197 +72,160 @@ struct WalkWidgetView: View {
             if entry.dogs.isEmpty {
                 NoDogsView()
             } else {
-                switch family {
-                case .systemSmall:
-                    SmallWidgetView(dogs: entry.dogs, settings: entry.settings)
-                case .systemMedium:
-                    MediumWidgetView(dogs: entry.dogs, settings: entry.settings)
-                case .systemLarge:
-                    LargeWidgetView(dogs: entry.dogs, settings: entry.settings)
-                @unknown default:
-                    SmallWidgetView(dogs: entry.dogs, settings: entry.settings)
-                }
+                // Only support medium widget size
+                MediumWidgetView(dogs: entry.dogs, selectedDogID: entry.selectedDogID)
             }
         }
     }
 }
 
-// MARK: - Small Widget (1x1)
-struct SmallWidgetView: View {
+
+// MARK: - Enhanced Medium Widget (Primary Interface)
+struct MediumWidgetView: View {
     let dogs: [DogData]
-    let settings: SharedDataManager.WidgetDisplaySettings
+    let selectedDogID: String?
     
-    private var displayDog: DogData? {
-        if let preferredID = settings.preferredDogID {
-            return dogs.first { $0.id == preferredID }
+    private var selectedDog: DogData? {
+        print("🔍 Widget View: Selecting dog...")
+        print("🔍 Widget View: Available dogs: \(dogs.count)")
+        for dog in dogs {
+            print("  - \(dog.name) (ID: \(dog.id))")
         }
-        return dogs.first
+        print("🔍 Widget View: Selected dog ID from config: \(selectedDogID ?? "None")")
+        
+        if let selectedDogID = selectedDogID {
+            let matchedDog = dogs.first { $0.id == selectedDogID }
+            print("🔍 Widget View: Matched dog: \(matchedDog?.name ?? "None")")
+            return matchedDog
+        }
+        
+        let firstDog = dogs.first
+        print("🔍 Widget View: Using first dog: \(firstDog?.name ?? "None")")
+        return firstDog
     }
     
     var body: some View {
-        VStack(spacing: 4) {
-            if let dog = displayDog {
-                HStack(spacing: 8) {
-                    DogImageView(imageData: dog.imageData, size: 32)
+        if let dog = selectedDog {
+            VStack(spacing: 12) {
+                // Dog header with larger profile
+                HStack(spacing: 12) {
+                    DogImageView(imageData: dog.imageData, size: 50)
                     
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(dog.name)
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(dog.name)
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                            
+                            if dog.isShared {
+                                Image(systemName: "person.2.fill")
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                            }
+                        }
                         
                         if let lastWalk = dog.lastWalk {
-                            Text(timeAgo(from: lastWalk.date))
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 6) {
+                                    Text("Last walk: \(timeAgo(from: lastWalk.date))")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    
+                                    WalkTypeIcon(walkType: lastWalk.walkType, size: .small)
+                                }
+                                
+                                // Show data freshness for decision making
+                                DataFreshnessIndicator()
+                            }
                         } else {
-                            Text("No walks")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("No walks today")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                
+                                DataFreshnessIndicator()
+                            }
                         }
                     }
                     
                     Spacer()
-                    
-                    if let lastWalk = dog.lastWalk {
-                        WalkTypeIcon(walkType: lastWalk.walkType, size: .small)
-                    }
                 }
                 
-                Spacer()
-                
-                // Quick action button
-                Button(intent: LogWalkIntent(dogID: dog.id, walkType: .walk)) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "figure.walk")
-                            .font(.caption2)
-                        Text("Walk")
-                            .font(.caption2)
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.accentColor)
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-            } else {
-                Text("No Dogs")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .padding(12)
-    }
-}
-
-// MARK: - Medium Widget (2x1)
-struct MediumWidgetView: View {
-    let dogs: [DogData]
-    let settings: SharedDataManager.WidgetDisplaySettings
-    
-    private var displayDogs: [DogData] {
-        if settings.showAllDogs {
-            return Array(dogs.prefix(2))
-        } else if let preferredID = settings.preferredDogID,
-                  let dog = dogs.first(where: { $0.id == preferredID }) {
-            return [dog]
-        }
-        return Array(dogs.prefix(1))
-    }
-    
-    var body: some View {
-        VStack(spacing: 8) {
-            // Dog info section
-            VStack(spacing: 6) {
-                ForEach(displayDogs, id: \.id) { dog in
-                    DogRowView(dog: dog)
-                }
-            }
-            
-            Spacer()
-            
-            // Action buttons
-            if let firstDog = displayDogs.first {
-                HStack(spacing: 8) {
-                    Button(intent: LogWalkIntent(dogID: firstDog.id, walkType: .walk)) {
-                        Label("Walk", systemImage: "figure.walk")
-                            .font(.caption)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.blue)
-                            .clipShape(Capsule())
+                // Enhanced action buttons with better visibility
+                HStack(spacing: 12) {
+                    let simpleIntent = SuperSimpleIntent()
+                    let _ = print("🔍 Widget: Creating SUPER SIMPLE intent")
+                    Button(intent: simpleIntent) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "figure.walk")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Walk")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.blue, Color.blue.opacity(0.8)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .buttonStyle(.plain)
                     
-                    Button(intent: LogWalkIntent(dogID: firstDog.id, walkType: .walkAndPoop)) {
-                        Label("Walk + Poop", systemImage: "leaf.fill")
-                            .font(.caption)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.brown)
-                            .clipShape(Capsule())
+                    Button(intent: LogWalkIntent(dogID: dog.id, walkType: .walkAndPoop)) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "leaf.fill")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Walk + Poop")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.brown, Color.brown.opacity(0.8)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .buttonStyle(.plain)
                 }
+                
+                // Walk statistics for today
+                if let lastWalk = dog.lastWalk, Calendar.current.isDateInToday(lastWalk.date) {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.caption)
+                        
+                        Text("Walked today")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Text(lastWalk.walkType.displayName)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
+            .padding(16)
+        } else {
+            NoDogsView()
         }
-        .padding(12)
     }
 }
 
-// MARK: - Large Widget (2x2)
-struct LargeWidgetView: View {
-    let dogs: [DogData]
-    let settings: SharedDataManager.WidgetDisplaySettings
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            // Header
-            HStack {
-                Text("Dog Walks")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                Spacer()
-                Text("Last Update: \(Date(), style: .time)")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-            
-            // Dogs list
-            VStack(spacing: 8) {
-                ForEach(dogs.prefix(3), id: \.id) { dog in
-                    DogRowView(dog: dog, showActions: true)
-                }
-            }
-            
-            Spacer()
-            
-            // Summary
-            if !dogs.isEmpty {
-                HStack {
-                    Text("\(dogs.count) dog\(dogs.count == 1 ? "" : "s")")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
-                    
-                    let walksToday = dogs.compactMap { $0.lastWalk }.filter { 
-                        Calendar.current.isDateInToday($0.date) 
-                    }.count
-                    
-                    Text("\(walksToday) walk\(walksToday == 1 ? "" : "s") today")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-        .padding(16)
-    }
-}
 
 // MARK: - Helper Views
 struct DogRowView: View {
@@ -373,21 +342,56 @@ struct WalkTypeIcon: View {
 
 struct NoDogsView: View {
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 12) {
             Image(systemName: "pawprint.circle")
-                .font(.title2)
+                .font(.largeTitle)
                 .foregroundColor(.gray)
-            
-            Text("No Dogs")
-                .font(.caption)
+
+            Text("No Dogs Found")
+                .font(.headline)
                 .fontWeight(.medium)
-            
-            Text("Add a dog in the app")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+
+            VStack(spacing: 4) {
+                Text("Open the app to sync your dogs")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+
+                Text("Tap 'Sync Dogs to Widget' in the Dogs tab")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
         }
-        .padding()
+        .padding(16)
+    }
+}
+
+struct DataFreshnessIndicator: View {
+    var body: some View {
+        if let lastUpdate = SharedDataManager.shared.getLastUpdateTimestamp() {
+            let timeSince = Date().timeIntervalSince(lastUpdate)
+
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(timeSince < 300 ? .green : timeSince < 900 ? .yellow : .red) // 5min fresh, 15min stale
+                    .frame(width: 6, height: 6)
+
+                Text("Updated \(timeAgo(from: lastUpdate))")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        } else {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(.gray)
+                    .frame(width: 6, height: 6)
+
+                Text("Sync pending")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        }
     }
 }
 
@@ -414,30 +418,18 @@ struct WpoopedFebWidget: Widget {
     let kind: String = "WpoopedFebWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: WalkWidgetProvider()) { entry in
+        AppIntentConfiguration(kind: kind, intent: DogSelectionConfigurationIntent.self, provider: WalkWidgetProvider()) { entry in
             WalkWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Dog Walks")
         .description("Track your dog's walks and see the latest activity.")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+        .supportedFamilies([.systemMedium])
     }
 }
 
 // MARK: - Preview
-#Preview(as: .systemSmall) {
-    WpoopedFebWidget()
-} timeline: {
-    WalkWidgetEntry.placeholder
-}
-
 #Preview(as: .systemMedium) {
-    WpoopedFebWidget()
-} timeline: {
-    WalkWidgetEntry.placeholder
-}
-
-#Preview(as: .systemLarge) {
     WpoopedFebWidget()
 } timeline: {
     WalkWidgetEntry.placeholder

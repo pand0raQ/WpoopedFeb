@@ -91,6 +91,54 @@ struct DogsListView: View {
                     }
                 }
                 
+                Button("Sync Dogs to Widget") {
+                    Task {
+                        SharedDataManager.shared.syncFromMainApp(dogs: dogs)
+                        print("🔄 Manually synced \(dogs.count) dogs to widget")
+                    }
+                }
+                
+                Button("Debug Widget Data") {
+                    SharedDataManager.shared.printDebugInfo()
+                }
+                
+                Button("Check Pending Widget Walks") {
+                    let pendingWalks = SharedDataManager.shared.getPendingWidgetWalks()
+                    print("📱 === PENDING WIDGET WALKS CHECK ===")
+                    print("📱 Found \(pendingWalks.count) pending widget walks")
+                    for (index, walk) in pendingWalks.enumerated() {
+                        print("📱 Walk \(index + 1):")
+                        print("  - ID: \(walk.id)")
+                        print("  - Dog ID: \(walk.dogID)")  
+                        print("  - Type: \(walk.walkType.displayName)")
+                        print("  - Date: \(walk.date)")
+                        print("  - Owner: \(walk.ownerName ?? "Unknown")")
+                    }
+                    print("📱 === END PENDING WALKS CHECK ===")
+                }
+                
+                Button("Check Widget Debug Logs") {
+                    if let sharedDefaults = UserDefaults(suiteName: "group.bumblebee.WpoopedFeb") {
+                        let debugLogs = sharedDefaults.stringArray(forKey: "widget_debug_logs") ?? []
+                        print("📱 === WIDGET DEBUG LOGS ===")
+                        print("📱 Found \(debugLogs.count) debug log entries")
+                        for log in debugLogs {
+                            print("📱 \(log)")
+                        }
+                        print("📱 === END WIDGET DEBUG LOGS ===")
+                    } else {
+                        print("📱 Could not access shared UserDefaults")
+                    }
+                }
+                
+                Button("Force Sync Pending Walks") {
+                    Task {
+                        print("📱 Manually triggering pending walks sync...")
+                        // Call the same sync function that the app uses
+                        await forceSyncPendingWalks()
+                    }
+                }
+                
                 Button("Debug Firebase Auth") {
                     Task {
                         FirestoreManager.shared.printFirebaseAuthStatus()
@@ -216,6 +264,92 @@ struct DogsListView: View {
                 Text(error)
             }
         }
+        .onChange(of: dogs.count) { _, newCount in
+            // Sync dogs to widget whenever the count changes
+            Task {
+                SharedDataManager.shared.syncFromMainApp(dogs: dogs)
+                print("🔄 Auto-synced \(newCount) dogs to widget after change")
+            }
+        }
+    }
+    
+    // MARK: - Helper Functions
+    private func forceSyncPendingWalks() async {
+        print("🔄 === FORCE SYNCING PENDING WIDGET WALKS ===")
+        
+        let pendingWalks = SharedDataManager.shared.getPendingWidgetWalks()
+        print("🔄 Found \(pendingWalks.count) pending widget walks")
+        
+        guard !pendingWalks.isEmpty else {
+            print("✅ No pending widget walks to sync")
+            return
+        }
+        
+        print("🔄 Syncing \(pendingWalks.count) pending widget walks to Firebase...")
+        
+        for (index, walkData) in pendingWalks.enumerated() {
+            print("🔄 Processing walk \(index + 1)/\(pendingWalks.count):")
+            print("  - Walk ID: \(walkData.id)")
+            print("  - Dog ID: \(walkData.dogID)")
+            print("  - Walk Type: \(walkData.walkType.displayName)")
+            print("  - Date: \(walkData.date)")
+            print("  - Owner: \(walkData.ownerName ?? "Unknown")")
+            
+            do {
+                // Convert WalkData to Firebase format and save
+                let walkDoc: [String: Any] = [
+                    "id": walkData.id,
+                    "dogID": walkData.dogID,
+                    "date": Timestamp(date: walkData.date),
+                    "walkType": walkData.walkType.rawValue,
+                    "ownerName": walkData.ownerName ?? "Widget User",
+                    "createdFromWidget": true
+                ]
+                
+                print("🔄 Saving to Firebase collection 'walks' with document ID: \(walkData.id)")
+                
+                // Save to Firebase
+                let db = Firestore.firestore()
+                let walkRef = db.collection("walks").document(walkData.id)
+                try await walkRef.setData(walkDoc)
+                
+                print("✅ Successfully synced widget walk to Firebase: \(walkData.walkType.displayName)")
+                
+                // Remove from pending list after successful sync
+                SharedDataManager.shared.removePendingWidgetWalk(withID: walkData.id)
+                print("✅ Removed walk from pending list")
+                
+                // Important: Add the walk to the local SwiftData model so it appears in the app
+                print("🔄 Adding walk to local model context...")
+                let newWalk = Walk(walkType: walkData.walkType, shouldSaveToFirestore: false)
+                newWalk.id = UUID(uuidString: walkData.id)
+                newWalk.date = walkData.date
+                
+                // Find the dog and add the walk
+                if let targetDog = dogs.first(where: { $0.id?.uuidString == walkData.dogID }) {
+                    newWalk.dog = targetDog
+                    modelContext.insert(newWalk)
+                    print("✅ Added walk to local model for dog: \(targetDog.name ?? "Unknown")")
+                } else {
+                    print("⚠️ Could not find dog with ID: \(walkData.dogID)")
+                }
+                
+                // Save the context
+                try? modelContext.save()
+                print("✅ Saved model context")
+                
+            } catch {
+                print("❌ Failed to sync widget walk \(walkData.id) to Firebase: \(error)")
+                print("❌ Error details: \(error.localizedDescription)")
+            }
+        }
+        
+        // After processing all walks, sync the updated dogs to the widget
+        print("🔄 Syncing updated dogs to widget...")
+        SharedDataManager.shared.syncFromMainApp(dogs: dogs)
+        print("✅ Updated widget with latest walk data")
+        
+        print("✅ === FINISHED FORCE SYNCING PENDING WIDGET WALKS ===")
     }
 }
 

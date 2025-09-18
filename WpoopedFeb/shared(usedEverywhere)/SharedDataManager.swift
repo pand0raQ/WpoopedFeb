@@ -2,6 +2,12 @@ import Foundation
 import WidgetKit
 import UIKit
 
+// MARK: - Notification Extensions
+extension Notification.Name {
+    static let widgetDataUpdated = Notification.Name("widgetDataUpdated")
+    static let dogWalkAdded = Notification.Name("dogWalkAdded")
+}
+
 // MARK: - Simplified Data Models for Widget
 struct WalkData: Codable {
     let id: String
@@ -139,6 +145,16 @@ class SharedDataManager {
         let dogs = getAllDogs()
         return dogs.first(where: { $0.id == dogID })?.lastWalk
     }
+
+    func getDogName(for dogID: String) -> String? {
+        let dogs = getAllDogs()
+        return dogs.first(where: { $0.id == dogID })?.name
+    }
+
+    func isDogShared(_ dogID: String) -> Bool {
+        let dogs = getAllDogs()
+        return dogs.first(where: { $0.id == dogID })?.isShared ?? false
+    }
     
     // MARK: - Sync from Main App Models
     func syncFromMainApp(dogs: [Dog]) {
@@ -185,6 +201,9 @@ class SharedDataManager {
     func updateWidgetTimeline() {
         WidgetCenter.shared.reloadAllTimelines()
         print("🔄 Requested widget timeline reload")
+        
+        // Also post notification for immediate sync
+        NotificationCenter.default.post(name: .widgetDataUpdated, object: nil)
     }
     
     func updateWidgetTimeline(for dogID: String) {

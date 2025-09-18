@@ -276,7 +276,21 @@ class DogDetailViewModel: ObservableObject {
             } catch {
                 print("❌ Error saving model context: \(error.localizedDescription)")
             }
-            
+
+            // IMPORTANT: Sync updated walks back to widget data
+            // This ensures the widget shows the latest walk information
+            Task { @MainActor in
+                // Get all dogs from the model context to sync with widget
+                let dogDescriptor = FetchDescriptor<Dog>()
+                do {
+                    let allDogs = try modelContext.fetch(dogDescriptor)
+                    SharedDataManager.shared.syncFromMainApp(dogs: allDogs)
+                    print("🔄 Synced updated walks to widget data")
+                } catch {
+                    print("❌ Failed to sync walks to widget data: \(error)")
+                }
+            }
+
             print("✅ Walks updated successfully: \(dog.walks?.count ?? 0) total walks")
         } else {
             print("ℹ️ No changes to walks - skipping UI update")

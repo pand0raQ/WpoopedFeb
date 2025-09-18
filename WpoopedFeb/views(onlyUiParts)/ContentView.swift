@@ -181,6 +181,11 @@ struct ContentView: View {
                         }
                     }
                     
+                    // Sync dogs to widget after adding them to model context
+                    Task {
+                        await syncDogsToWidget()
+                    }
+                    
                     isLoading = false
                 }
             } catch let error as NSError {
@@ -252,6 +257,21 @@ struct ContentView: View {
             }
         } catch {
             print("❌ Error finding sample dogs by name: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - Widget Data Sync
+    private func syncDogsToWidget() async {
+        do {
+            let dogDescriptor = FetchDescriptor<Dog>()
+            let dogs = try modelContext.fetch(dogDescriptor)
+            
+            // Sync to SharedDataManager for widget access
+            SharedDataManager.shared.syncFromMainApp(dogs: dogs)
+            
+            print("🔄 ContentView: Synced \(dogs.count) dogs to widget data")
+        } catch {
+            print("❌ ContentView: Failed to sync dogs to widget data: \(error.localizedDescription)")
         }
     }
 }

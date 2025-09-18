@@ -7,10 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1509B8EF2E7B892B009D368A /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1509B8EE2E7B892B009D368A /* AppIntents.framework */; };
 		15DF778B2E1C25620032E5BC /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 15DF778A2E1C25620032E5BC /* WidgetKit.framework */; };
 		15DF778D2E1C25620032E5BC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 15DF778C2E1C25620032E5BC /* SwiftUI.framework */; };
 		15DF779A2E1C25650032E5BC /* WpoopedFebWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 15DF77892E1C25610032E5BC /* WpoopedFebWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		6FF70FD1A05D05F5AA09AB76 /* Pods_WpoopedFeb.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F5208C621038EC0FEC7B366B /* Pods_WpoopedFeb.framework */; };
+		2385053E44EB4BD8B61836EA /* Pods_WpoopedFeb.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B1865A72FB3C4C9D7344E87 /* Pods_WpoopedFeb.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -38,14 +39,15 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1509B8EE2E7B892B009D368A /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/AppIntents.framework; sourceTree = DEVELOPER_DIR; };
 		15DA5D7A2D5653D9001532AE /* WpoopedFeb.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WpoopedFeb.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		15DF77892E1C25610032E5BC /* WpoopedFebWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WpoopedFebWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		15DF778A2E1C25620032E5BC /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		15DF778C2E1C25620032E5BC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		15DF77A22E1C25900032E5BC /* WpoopedFebWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = WpoopedFebWidgetExtension.entitlements; path = WpoopedFebWidgetExtension/WpoopedFebWidgetExtension.entitlements; sourceTree = "<group>"; };
-		162278B300AC8116395F6F89 /* Pods-WpoopedFeb.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WpoopedFeb.debug.xcconfig"; path = "Target Support Files/Pods-WpoopedFeb/Pods-WpoopedFeb.debug.xcconfig"; sourceTree = "<group>"; };
-		99B7B53FDDF34D1C93A45B44 /* Pods-WpoopedFeb.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WpoopedFeb.release.xcconfig"; path = "Target Support Files/Pods-WpoopedFeb/Pods-WpoopedFeb.release.xcconfig"; sourceTree = "<group>"; };
-		F5208C621038EC0FEC7B366B /* Pods_WpoopedFeb.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_WpoopedFeb.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		5B1865A72FB3C4C9D7344E87 /* Pods_WpoopedFeb.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_WpoopedFeb.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		5D3A5257F565EC56DD069344 /* Pods-WpoopedFeb.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WpoopedFeb.debug.xcconfig"; path = "Target Support Files/Pods-WpoopedFeb/Pods-WpoopedFeb.debug.xcconfig"; sourceTree = "<group>"; };
+		8C1F939B5C8AA63ADE880985 /* Pods-WpoopedFeb.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WpoopedFeb.release.xcconfig"; path = "Target Support Files/Pods-WpoopedFeb/Pods-WpoopedFeb.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -89,7 +91,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				6FF70FD1A05D05F5AA09AB76 /* Pods_WpoopedFeb.framework in Frameworks */,
+				2385053E44EB4BD8B61836EA /* Pods_WpoopedFeb.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -99,6 +101,7 @@
 			files = (
 				15DF778D2E1C25620032E5BC /* SwiftUI.framework in Frameworks */,
 				15DF778B2E1C25620032E5BC /* WidgetKit.framework in Frameworks */,
+				1509B8EF2E7B892B009D368A /* AppIntents.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -129,8 +132,8 @@
 		3A3A6DECF92A58A4159072D6 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				162278B300AC8116395F6F89 /* Pods-WpoopedFeb.debug.xcconfig */,
-				99B7B53FDDF34D1C93A45B44 /* Pods-WpoopedFeb.release.xcconfig */,
+				5D3A5257F565EC56DD069344 /* Pods-WpoopedFeb.debug.xcconfig */,
+				8C1F939B5C8AA63ADE880985 /* Pods-WpoopedFeb.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -138,9 +141,10 @@
 		950C32E364504E47D243BE89 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				F5208C621038EC0FEC7B366B /* Pods_WpoopedFeb.framework */,
+				1509B8EE2E7B892B009D368A /* AppIntents.framework */,
 				15DF778A2E1C25620032E5BC /* WidgetKit.framework */,
 				15DF778C2E1C25620032E5BC /* SwiftUI.framework */,
+				5B1865A72FB3C4C9D7344E87 /* Pods_WpoopedFeb.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -152,12 +156,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 15DA5D8B2D5653DC001532AE /* Build configuration list for PBXNativeTarget "WpoopedFeb" */;
 			buildPhases = (
-				14FD81E1B624E2B599EDB382 /* [CP] Check Pods Manifest.lock */,
+				1F5CFD35488F79FB3E46F4F7 /* [CP] Check Pods Manifest.lock */,
 				15DA5D762D5653D9001532AE /* Sources */,
 				15DA5D772D5653D9001532AE /* Frameworks */,
 				15DA5D782D5653D9001532AE /* Resources */,
-				AC723BC18159BDC3881D341E /* [CP] Embed Pods Frameworks */,
 				15DF779F2E1C25650032E5BC /* Embed Foundation Extensions */,
+				2D586D14E34FA6CD4C7B5F4F /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -188,8 +192,6 @@
 				15DF778E2E1C25620032E5BC /* WpoopedFebWidget */,
 			);
 			name = WpoopedFebWidgetExtension;
-			packageProductDependencies = (
-			);
 			productName = WpoopedFebWidgetExtension;
 			productReference = 15DF77892E1C25610032E5BC /* WpoopedFebWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -202,7 +204,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1640;
-				LastUpgradeCheck = 1620;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					15DA5D792D5653D9001532AE = {
 						CreatedOnToolsVersion = 16.2;
@@ -250,7 +252,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		14FD81E1B624E2B599EDB382 /* [CP] Check Pods Manifest.lock */ = {
+		1F5CFD35488F79FB3E46F4F7 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -272,7 +274,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		AC723BC18159BDC3881D341E /* [CP] Embed Pods Frameworks */ = {
+		2D586D14E34FA6CD4C7B5F4F /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -323,7 +325,7 @@
 /* Begin XCBuildConfiguration section */
 		15DA5D8C2D5653DC001532AE /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 162278B300AC8116395F6F89 /* Pods-WpoopedFeb.debug.xcconfig */;
+			baseConfigurationReference = 5D3A5257F565EC56DD069344 /* Pods-WpoopedFeb.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -332,10 +334,15 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"WpoopedFeb/Preview Content\"";
-				DEVELOPMENT_TEAM = C77N4S9VR3;
-				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readwrite;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WpoopedFeb/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = yes;
@@ -348,26 +355,30 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = bumblebee.WpoopedFeb;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-				XROS_DEPLOYMENT_TARGET = 2.2;
+				XROS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Debug;
 		};
 		15DA5D8D2D5653DC001532AE /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 99B7B53FDDF34D1C93A45B44 /* Pods-WpoopedFeb.release.xcconfig */;
+			baseConfigurationReference = 8C1F939B5C8AA63ADE880985 /* Pods-WpoopedFeb.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -376,10 +387,15 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"WpoopedFeb/Preview Content\"";
-				DEVELOPMENT_TEAM = C77N4S9VR3;
-				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readwrite;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WpoopedFeb/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = yes;
@@ -392,20 +408,24 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = bumblebee.WpoopedFeb;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-				XROS_DEPLOYMENT_TARGET = 2.2;
+				XROS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
 		};
@@ -443,7 +463,9 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = C77N4S9VR3;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -465,6 +487,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -504,7 +527,9 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = C77N4S9VR3;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -519,6 +544,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -532,13 +558,12 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = C77N4S9VR3;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WpoopedFebWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = WpoopedFebWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -564,13 +589,12 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = C77N4S9VR3;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WpoopedFebWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = WpoopedFebWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

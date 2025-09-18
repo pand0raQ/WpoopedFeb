@@ -1,9 +1,25 @@
 import Foundation
 import SwiftData
 import UIKit
+
+// Import Firebase modules with error handling
+#if canImport(FirebaseFirestore)
 import FirebaseFirestore
+#else
+#error("FirebaseFirestore module not found. Please check your Firebase setup.")
+#endif
+
+#if canImport(FirebaseStorage)
 import FirebaseStorage
+#else
+#error("FirebaseStorage module not found. Please check your Firebase setup.")
+#endif
+
+#if canImport(FirebaseAuth)
 import FirebaseAuth
+#else
+#error("FirebaseAuth module not found. Please check your Firebase setup.")
+#endif
 
 protocol FirestoreSyncable {
     func toFirestoreData() -> [String: Any]
